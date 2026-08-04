@@ -1,57 +1,25 @@
+# Sourced numeric claims registered for evidence-registry validation.
+# Every claim is computed deterministically by the mission solution; none are
+# hand-authored in prose. Local-only tree.
+
 claims:
-  - claim_id: figure-export-dpi
-    kind: number
-    value: 300
-    source: projects/working/bond/the_living_daylights/src/viz_config.py plotting defaults (dpi)
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/convergence_plot.png
-  - claim_id: step-size-sensitivity-cap
-    kind: number
-    value: 500
-    source: projects/working/bond/the_living_daylights/src/sweeps.py sensitivity_sweep max_iter cap
-    source_tier: generated_metric
-    freshness: active
-    artifact_path: output/figures/step_size_sensitivity.png
-  - claim_id: stability-log-lower
-    kind: number
-    value: -6
-    source: projects/working/bond/the_living_daylights/src/figures/scientific_stability.py stability visualization caption
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/stability_analysis.png
-  - claim_id: solution-relative-error-exponent
-    kind: number
-    value: -4
-    source: projects/working/bond/the_living_daylights/manuscript/03_results.md stated precision threshold
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: manuscript/03_results.md
-  - claim_id: stability-log-upper
-    kind: number
-    value: -9
-    source: projects/working/bond/the_living_daylights/src/figures/scientific_stability.py stability visualization caption
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/stability_analysis.png
-  - claim_id: benchmark-tolerance-exponent
-    kind: number
-    value: -10
-    source: projects/working/bond/the_living_daylights/scripts/optimization_analysis.py dimensional benchmark tolerance
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
-  - claim_id: benchmark-min-iterations
-    kind: number
-    value: 219
-    source: projects/working/bond/the_living_daylights/manuscript/03_results.md benchmark caption
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
-  - claim_id: benchmark-max-iterations
-    kind: number
-    value: 238
-    source: projects/working/bond/the_living_daylights/manuscript/03_results.md benchmark caption
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
+  - key: zero_elevation_mrad
+    source: compute_mission.mission_solution()["ballistics"]["elevation_mrad"]
+    description: "Muzzle elevation to zero the 7.62mm service round at 300 m."
+    kind: computed
+  - key: near_far_zero
+    source: compute_mission.mission_solution()["ballistics"]
+    description: "Near and far zero ranges of the zeroed trajectory."
+    kind: computed
+  - key: wind_hold_mrad
+    source: compute_mission.mission_solution()["ballistics"]["wind_hold_mrad"]
+    description: "Wind hold to cancel a 5 m/s crosswind at 300 m."
+    kind: computed
+  - key: defection_plan_verdict
+    source: compute_mission.mission_solution()["defection"]["plan_verdict"]
+    description: "KOSKOV defection plan verdict from the staged risk model."
+    kind: computed
+  - key: route_mean_cover
+    source: compute_mission.mission_solution()["terrain"]["mean_cover"]
+    description: "Mean concealment of the planned exfil route."
+    kind: computed

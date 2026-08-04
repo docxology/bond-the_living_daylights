@@ -1,24 +1,32 @@
-# Scope, Related Work, and Positioning {#sec:scope}
+# Scope and related work
 
-This section situates the exemplar scientifically and states explicit boundaries. The goal is not to compete with monographs on nonlinear programming [@nocedal2006numerical; @bertsekas1999nonlinear], but to show how a minimal, test-backed optimization story fits the template's reproducibility and rendering stack [@peng2011reproducible].
+## Scope boundary
 
-## Classical gradient methods
+SNIPER'S NEST models the deterministic core of a special-agent mission only. It
+does **not** simulate aerodynamics beyond the point-mass quadratic-drag law
+(no spin, Coriolis, Magnus, or atmospheric layering), nor does it model
+adversarial stochastics, human factors, or network communications. Terrain is a
+seeded grid of landcover and concealment; the planner optimizes a blended
+cost, not a full line-of-sight ballistic occlusion query. These simplifications
+are deliberate: they keep every result deterministic, fast, and auditable.
 
-Smooth unconstrained minimization via first-order updates has a long lineage, from Cauchy's early descent perspective [@cauchy1847methode] to modern treatments of convex problems [@boyd2004convex] and accelerated gradient schemes [@nesterov2013gradient]. Polyak's classical discussion of gradient convergence factors remains relevant when interpreting empirical iteration counts [@polyak1964some]. The present manuscript restricts attention to **fixed-step** gradient descent on a **convex quadratic**, where rates reduce to scalar linear recurrences in the error ([@sec:results], [@eq:scalar_linear_update]).
+## Relation to the broader simulation canon
 
-## Adaptive and stochastic extensions
+* **External ballistics** — the point-mass drag model follows the standard
+  small-arms treatment (a quadratic drag law with a ballistic coefficient);
+  the zeroing and windage geometry mirrors conventional rifle-zero practice,
+  with near/far zero capture.
+* **Risk-gated decision procedures** — the discrete, thresholded approval path
+  of `defection_protocol.py` is a classic monotone decision chain; its weighted
+  hazard scoring follows a transparent exposure-weighting scheme.
+* **Terrain routing** — Dijkstra's algorithm over a cost grid is the canonical
+  least-cost routing method; the contribution here is the *cover* term that
+  folds concealment into route cost and an independent cover audit.
 
-Practical machine-learning optimizers (e.g., Adam [@kingma2014adam]) introduce momentum, adaptive preconditioning, or noise from minibatching. Those methods are **out of scope** for `the_living_daylights`: the exemplar deliberately keeps the algorithm minimal so that failures (divergent $\alpha$, iteration caps) are interpretable without confounding from stochastic sampling or line-search logic.
+## Intended use
 
-## What this project proves about the template
-
-The scientific claims through [@sec:introduction], [@sec:methodology], and [@sec:results] are standard textbook material. The **non-standard** contribution is procedural: configuration in `manuscript/config.yaml` drives `run_convergence_experiment()`, figures, CSV exports, and `RESULT_*` token substitution (`scripts/z_generate_manuscript_variables.py`) so that PDF, HTML, and validation logs refer to the same numbers. That pattern is what downstream projects should copy—whether the domain is optimization, differential equations, or Bayesian workflows.
-
-## Explicit limitations
-
-1. **Dimensionality**: Default experiments emphasize $d = 1$ with $A = I$ for transparent plotting; the benchmark figure explores $d > 1$ only with identity Hessians, so no ill-conditioning effects appear.
-2. **Step-size policy**: Only constant $\alpha$ is implemented in `src/optimizer.py`; there is no Wolfe or Armijo backtracking.
-3. **Global optimization**: Convexity is assumed; no basin-hopping or restarts are studied.
-4. **Numerical model**: Double-precision floating point only; no interval or arbitrary-precision analysis.
-
-These limitations are intentional: they narrow the failure surface so that infrastructure concerns—tests, logging, figure registration, and PDF cross-references—remain visible rather than buried under algorithmic complexity.
+The package is one film in the PROJECT BOND suite. Its role is to implement the
+frozen BOND-API `MissionProvider` contract with a real, deterministic,
+well-tested domain core, and to serve as a canonical example of converting a
+template scaffold into a standalone mission package. It is local-only and is
+discovered by the suite orchestrator via `bond_api`.

@@ -1,30 +1,23 @@
 {
+  "title": "The Living Daylights: SNIPER'S NEST — Special-Agent Mission Software",
+  "description": "Deterministic PROJECT BOND mission software for The Living Daylights (1987): sniper ballistics, staged risk-scored defection handling, and mountain/desert terrain operations. Implements the frozen BOND-API MissionProvider protocol. Local-only working tree.",
   "creators": [
     {
+      "name": "Daniel Ari Friedman",
       "affiliation": "Active Inference Institute",
-      "name": "Friedman, Daniel Ari",
       "orcid": "0000-0001-6232-9096"
     }
   ],
-  "description": "Source code for Convergence Analysis of Gradient Descent Optimization (2026).",
   "keywords": [
-    "optimization algorithms",
-    "gradient descent",
-    "convergence analysis",
-    "numerical methods",
-    "mathematical programming",
-    "reproducible research",
-    "infrastructure automation"
+    "sniper ballistics",
+    "rifle zero",
+    "rules of engagement",
+    "defection protocol",
+    "terrain operations",
+    "deterministic simulation"
   ],
+  "access_right": "restricted",
   "license": "MIT",
-  "related_identifiers": [
-    {
-      "identifier": "10.5281/zenodo.20417136",
-      "relation": "isVersionOf",
-      "scheme": "doi"
-    }
-  ],
-  "title": "Convergence Analysis of Gradient Descent Optimization",
   "upload_type": "software",
-  "version": "2.5.2"
+  "version": "0.1.0"
 }

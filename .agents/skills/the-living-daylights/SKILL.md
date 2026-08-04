@@ -1,53 +1,58 @@
 ---
 name: the-living-daylights
-description: Code-centric optimization research exemplar — gradient descent, convergence analysis, automated figures, dashboard, and publication-quality PDF.
-version: 0.1.0
-author: docxology
+description: PROJECT BOND film package (The Living Daylights, 1987) — SNIPER'S NEST: sniper ballistics, defection handling, terrain ops; frozen BOND-API provider.
+version: 0.2.0
+author: Active Inference Institute
 license: MIT
-tags: [exemplar, code, optimization, thin-orchestrator]
+tags: [bond, mission, ballistics, defection-protocol, terrain-ops, deterministic]
 ---
 
 # the-living-daylights
 
-Project-scoped skill for the in-repo exemplar at
-`projects/working/bond/the_living_daylights/`. Load this when working inside the project.
+Project-scoped skill for the in-repo PROJECT BOND film package at
+`projects/working/bond/the_living_daylights/`. Load this when working inside the
+project. **Mission codename: SNIPER'S NEST.**
 
 ## When to Use
 
-- Working inside the `the_living_daylights` exemplar — running scripts, editing source,
-  or regenerating outputs.
-- Forking this exemplar as the starting scaffold for a new research project.
-- Validating that the exemplar's contracts (thin-orchestrator, layer boundaries,
-  no-mocks testing) still hold after changes.
+- Working inside `the_living_daylights` — running the mission CLIs, editing the
+  domain core, or regenerating outputs.
+- Implementing or verifying the frozen BOND-API `MissionProvider` for this film.
+- Validating the package contracts (pure core, layer boundaries, no-mocks,
+  determinism) after changes.
 
 ## Quick Reference
 
 ```bash
-# From the repository root
-uv run pytest projects/working/bond/the_living_daylights/tests --cov=projects/working/bond/the_living_daylights/src --cov-fail-under=90
-uv run python scripts/pipeline/stage_02_analysis.py --project templates/the_living_daylights
-uv run python scripts/pipeline/stage_03_render.py --project templates/the_living_daylights
-uv run python scripts/pipeline/stage_04_validate.py --project templates/the_living_daylights
-uv run python scripts/pipeline/stage_05_copy.py --project templates/the_living_daylights
+# From this package directory
+uv sync --extra dev
+uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
+uv run mypy src/ scripts/
+uv run python scripts/execute.py              # run the full deterministic mission
+uv run python scripts/z_generate_manuscript_variables.py   # hydrate manuscript + figures
 ```
 
 ## Pitfalls
 
-- **Keep scripts thin.** Business logic belongs in `src/` or shared
-  `infrastructure/`, not in `scripts/`.
-- **No mocks.** All tests must use real data, real files, and real
-  computation.
+- **Keep the core pure.** `ballistics.py`, `defection_protocol.py`,
+  `terrain_ops.py`, `compute_mission.py`, `settings.py` import stdlib + numpy
+  only. Only `mission.py` may import `bond_api`.
+- **Frozen protocol.** Implement `MissionProvider` against `bond_api.protocol`
+  exactly; never invent types.
+- **No mocks.** All tests use real data and real computation, deterministically.
 - **Outputs are disposable.** Never hand-edit `output/` — regenerate from
-  source and config.
-- **Keep tracked benchmarks deterministic.** Serialize reproducible inputs,
-  objective values, and checks; keep wall-clock timing as a runtime-only
-  diagnostic.
-- **Run from the repo root.** Commands assume the template monorepo root
-  as working directory unless the child `AGENTS.md` states otherwise.
+  source and config (`z_generate_manuscript_variables.py`).
+- **No lineage.** The tree must stay free of `template_code_project` strings
+  (verify with `rg`).
+- **Deterministic.** Fixed seed (7), no wall-clock in persisted artifacts.
+- **Local-only.** No remote; commit inside this package's own git repo with
+  path-scoped commits.
 
 ## Cross-refs
 
-- Project contract: [`AGENTS.md`](../../../AGENTS.md)
+- Package contract: [`AGENTS.md`](../../../AGENTS.md)
 - README: [`README.md`](../../../README.md)
-- TODO: [`TODO.md`](../../../TODO.md)
-- Exemplar roster: [`projects/AGENTS.md`](../../../../../AGENTS.md)
+- TODO (what's built + integration points): [`TODO.md`](../../../TODO.md)
+- Mission protocol references live in the external skill
+  `bond-suite-package-development` (`references/bond-api-phase1.md`).

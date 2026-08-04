@@ -1,31 +1,31 @@
 {
   "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
   "@type": "SoftwareSourceCode",
+  "name": "The Living Daylights: SNIPER'S NEST",
+  "identifier": "the_living_daylights",
+  "version": "0.1.0",
+  "description": "Deterministic PROJECT BOND mission software for The Living Daylights (1987): sniper ballistics, staged risk-scored defection handling, and mountain/desert terrain operations. Implements the frozen BOND-API MissionProvider protocol.",
+  "license": "MIT",
   "author": [
     {
-      "@id": "https://orcid.org/0000-0001-6232-9096",
       "@type": "Person",
-      "affiliation": {
-        "@type": "Organization",
-        "name": "Active Inference Institute"
-      },
+      "givenName": "Daniel Ari",
       "familyName": "Friedman",
-      "givenName": "Daniel Ari"
+      "email": "daniel@activeinference.institute",
+      "@id": "https://orcid.org/0000-0001-6232-9096",
+      "affiliation": { "@type": "Organization", "name": "Active Inference Institute" }
     }
   ],
-  "codeRepository": "https://github.com/docxology/the_living_daylights",
-  "dateModified": "2026-07-10",
-  "identifier": "10.5281/zenodo.20417136",
+  "programmingLanguage": "Python",
+  "runtimePlatform": "Python",
+  "dateCreated": "2026-08-04",
   "keywords": [
-    "optimization algorithms",
-    "gradient descent",
-    "convergence analysis",
-    "numerical methods",
-    "mathematical programming",
-    "reproducible research",
-    "infrastructure automation"
+    "sniper ballistics",
+    "rifle zero",
+    "rules of engagement",
+    "defection protocol",
+    "terrain operations",
+    "deterministic simulation"
   ],
-  "license": "https://spdx.org/licenses/MIT",
-  "name": "Convergence Analysis of Gradient Descent Optimization",
-  "version": "2.5.2"
+  "isPartOf": { "@type": "SoftwareSourceCode", "name": "PROJECT BOND" }
 }

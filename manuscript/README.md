@@ -1,83 +1,34 @@
-# `the_living_daylights` - The Repository Exemplar
+# manuscript/ — SNIPER'S NEST
 
-This is the stable code exemplar for the Research Project Template: a tested numerical optimization implementation routed through the shared infrastructure, project test suite, and manuscript renderer.
+Manuscript identity and sections for *The Living Daylights: SNIPER'S NEST —
+Special-Agent Mission Software*.
 
-It demonstrates the complete research pipeline from algorithm implementation through strict validation to multi-format result visualization.
+## File roles
 
-## Template Architecture
+| File | Role |
+| --- | --- |
+| `00_abstract.md` … `07_scope_and_related_work.md` | Numbered prose sections. |
+| `99_references.md`, `references.bib` | References. |
+| `config.yaml` | Paper identity + mission parameters (single source). |
+| `config.yaml.example` | Reference copy of every configurable field. |
+| `SYNTAX.md` | Pandoc citation / figure / cross-reference syntax. |
+| `layer_contract.yaml` | Declarative layer contract (validation input). |
 
-This project is explicitly designed to showcase the repository's three foundational pillars:
+## Token protocol
 
-1. **`infrastructure/` Layer**: The code delegates tracking, performance benchmarking, stability validation, and PDF rendering to the shared infrastructure packages at the repository root. Current package counts live in [`docs/_generated/COUNTS.md`](../../../../docs/_generated/COUNTS.md).
-2. **`tests/` Integrity**: A zero-mock suite ([`projects/working/bond/the_living_daylights/tests/`](../tests/)) with **≥90%** coverage on `projects/working/bond/the_living_daylights/src/`. Live test count and measured coverage: [`docs/_generated/COUNTS.md`](../../../../docs/_generated/COUNTS.md).
-3. **`docs/` Orchestration**: Project documentation under `projects/working/bond/the_living_daylights/docs/` records the operational patterns and is checked by the repository documentation lint gates.
+Every metric flows through
+[`src/the_living_daylights/manuscript_variables.py`](../src/the_living_daylights/manuscript_variables.py)'s
+`generate_variables()`, which reads `config.yaml` plus the deterministic
+mission solution. Never hand-author a number in prose. The live cross-reference
+test (`tests/test_manuscript_variables.py`) fails if any `{{TOKEN}}` in a
+numbered section is not generated.
 
-## Manuscript Structure
-
-The `manuscript/` directory contains the raw markdown files that the renderer (`infrastructure/rendering/pdf_renderer.py`) transforms into the final academic PDF. These files are designed as a meta-narrative to demonstrate exactly how the repository executes:
-
-- `00_abstract.md`: Abstract; build variables and CSV-backed prose via `scripts/z_generate_manuscript_variables.py`.
-- `01_introduction.md`: Introduction of the infrastructure pillars bridging to CI/CD files.
-- `02_methodology.md`: Mathematical methods mapping to specific python script execution lines.
-- `03_results.md`: Convergence analysis built via `infrastructure.reporting`, pointing back at itself.
-- `04_conclusion.md`: Summary of the template automation and publication outputs.
-
-## Architecture
-
-The project acts as a bridge between custom mathematical logic and the repository's core:
-
-```mermaid
-graph TD
-    classDef infra fill:#f5f5f5,stroke:#333,stroke-width:2px;
-    classDef project fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
-    classDef docs fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
-
-    subgraph "Project Space (`projects/working/bond/the_living_daylights/`)"
-        Script["scripts/optimization_analysis.py"]:::project
-        Manuscript["manuscript/*.md"]:::project
-    end
-
-    subgraph "Template Ecosystem"
-        Tests["tests/ (see canonical facts)"]:::docs
-        Config["config.yaml & preamble.md"]:::docs
-
-        subgraph "`infrastructure/`"
-            Validation["infrastructure.validation"]:::infra
-            Scientific["infrastructure.scientific"]:::infra
-            Reporting["infrastructure.reporting"]:::infra
-            Rendering["infrastructure.rendering"]:::infra
-        end
-    end
-
-    Script -->|Delegates precision checks| Scientific
-    Script -->|Tested strictly by| Tests
-    Tests -->|Protected by| Validation
-    Script -->|Generates data for| Reporting
-    Reporting -->|Formats| Manuscript
-    Manuscript -->|Compiled with| Config
-    Config -->|Sent to| Rendering
-    Rendering -->|Produces| PDF["output/templates/the_living_daylights/pdf/template_code_project_combined.pdf"]:::project
-```
-
-## Quick Start
-
-Experience the automated pipeline directly:
+## Hydration
 
 ```bash
-# From repository root
-uv run python projects/working/bond/the_living_daylights/scripts/optimization_analysis.py
-
-uv run python scripts/pipeline/stage_03_render.py --project templates/the_living_daylights
-
-open output/templates/the_living_daylights/pdf/template_code_project_combined.pdf
+uv run python scripts/z_generate_manuscript_variables.py
 ```
 
-## AI Agent Directives
-
-If you are an AI agent operating in this repository, you **MUST** read [`AGENTS.md`](AGENTS.md) before executing any code modifications. It defines the zero-mock testing constraints and infrastructure coupling rules.
-
-## See also
-
-- [`SYNTAX.md`](SYNTAX.md) — Pandoc citation / cross-reference conventions for this manuscript.
-- [`../../../docs/guides/manuscript-semantics.md`](../../../../docs/guides/manuscript-semantics.md) — Repository-wide manuscript semantics.
-- [`../../../AGENTS.md`](../../../AGENTS.md#permanent-canonical-exemplars) — public exemplar roster.
+writes the resolved sections to `output/manuscript/`, the token map to
+`output/data/manuscript_variables.json`, and renders both figures to
+`output/figures/`. `output/` is regenerable and git-ignored.

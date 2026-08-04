@@ -1,10 +1,11 @@
-# References {#sec:references}
+# References
 
-Bibliography lives in [`manuscript/references.bib`](references.bib) and is read by Pandoc during PDF render. The build pipeline invokes Pandoc with `--natbib`, so every `[@key]` citation in the manuscript is rewritten to the appropriate `\cite{}`/`\citep{}`/`\citet{}` LaTeX command and resolved against the bib file.
+<div id="refs"></div>
 
-To validate that `references.bib` is syntactically clean and contains the required fields per entry type:
+1. Friedman, D. A. (2026). *The Living Daylights: SNIPER'S NEST — Special-Agent
+   Mission Software* (v0.1.0). PROJECT BOND suite, Active Inference Institute.
+   Local-only working tree.
+2. PROJECT BOND (2026). *bond-api — the frozen mission protocol contract*
+   (Phase 1 reference). Bond suite, Active Inference Institute.
 
-```bash
-uv run python -m infrastructure.reference.citation.cli validate \
-    projects/working/bond/the_living_daylights/manuscript/references.bib --strict
-```
+See [`references.bib`](references.bib) for the BibTeX records.

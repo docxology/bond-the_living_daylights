@@ -1,5 +1,45 @@
-# Code-centric exemplar: optional monorepo adapters only.
-allow_infrastructure_imports:
-  - src/analysis/_infra.py
-  - src/_runtime.py
-  - src/benchmark_support.py
+# Layer contract — input to check_project_src_infrastructure_boundary
+# Enforced by scripts/audit/check_template_drift.py --strict.
+# Declares which surfaces may import what, for the SNIPER'S NEST package.
+
+layers:
+  pure_core:
+    description: "Mathematical / domain logic — infrastructure-free, no bond_api"
+    modules:
+      - src/the_living_daylights/ballistics.py
+      - src/the_living_daylights/defection_protocol.py
+      - src/the_living_daylights/terrain_ops.py
+      - src/the_living_daylights/compute_mission.py
+      - src/the_living_daylights/settings.py
+    allowed_imports:
+      - stdlib
+      - numpy
+    forbidden_imports:
+      - bond_api
+      - infrastructure
+
+  adapter:
+    description: "Misson adapter — the only bond_api integration seam"
+    modules:
+      - src/the_living_daylights/mission.py
+    allowed_imports:
+      - bond_api
+      - the_living_daylights
+
+  presentation:
+    description: "Manuscript hydration + figure rendering"
+    modules:
+      - src/the_living_daylights/manuscript_variables.py
+      - src/the_living_daylights/figures/plots.py
+    allowed_imports:
+      - the_living_daylights
+      - yaml
+      - matplotlib
+
+  orchestrators:
+    description: "Thin phasing scripts"
+    modules:
+      - scripts/*.py
+    allowed_imports:
+      - bond_api
+      - the_living_daylights

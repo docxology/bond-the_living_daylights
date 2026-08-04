@@ -1,19 +1,18 @@
-"""Pytest configuration for the_living_daylights tests."""
+"""Pytest fixtures for SNIPER'S NEST.
+
+Adds ``src/`` to ``sys.path`` (required for ``the_living_daylights`` imports)
+and pins the matplotlib backend to Agg so figure tests never open a display.
+No mocks — all tests use real computation and real data.
+"""
+
+from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
-# Force headless backend for matplotlib in tests
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-# Add src/ AND the repo root to path so the documented per-project pytest command
-# works from a clean environment. The project pyproject's `pythonpath` is
-# project-relative and omits the repo root, so without this the suite cannot import
-# `infrastructure` (tests collect-error). The project lives at
-# projects/templates/<name>/, so the repo root is three levels above ROOT.
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-SRC = os.path.join(ROOT, "src")
-REPO_ROOT = os.path.abspath(os.path.join(ROOT, "..", "..", ".."))
-for _path in (REPO_ROOT, SRC):
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(_ROOT / "src"))

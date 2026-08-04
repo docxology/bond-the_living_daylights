@@ -1,83 +1,59 @@
-# Methodology {#sec:methodology}
+# Methodology
 
-This section describes the implementation methodology, explicitly detailing how the optimization algorithms are constructed, validated, and analyzed using the Generalized Research Template's `infrastructure` and `tests` ecosystems.
+Three concept modules define the algorithms: sniper ballistics, staged
+defection handling, and terrain routing. All are deterministic and
+infrastructure-free.
 
-## Algorithm Implementation
+## Sniper ballistics (`ballistics.py`)
 
-### Gradient Descent Algorithm
+The round is modelled as a **point-mass projectile with quadratic air drag**
+plus gravity, integrated with a fixed-step classical RK4
+(`ballistics.trajectory`). The drag deceleration follows the standard law
+`a_drag = (rho·A·C_d / 2m)·v²`; the ballistic coefficient
+`BC = m / (A·C_d)` for the {{BAL_CALIBER_MM}} mm service round is
+{{BAL_BC}} kg/m² at a muzzle velocity of {{BAL_MUZZLE_VELOCITY}} m/s and bullet
+mass {{BAL_BULLET_MASS_G}} g.
 
-The core algorithm implements the iterative procedure for unconstrained optimization. The [`optimizer` module](https://github.com/docxology/template/blob/main/projects/working/bond/the_living_daylights/src/optimizer.py) uses the standard-library `logging` logger for optional verbose diagnostics; the [analysis orchestrator](https://github.com/docxology/template/blob/main/projects/working/bond/the_living_daylights/scripts/optimization_analysis.py) uses `infrastructure.core.logging.utils.get_logger`. Tests run under the hermetic boundaries defined in the [test configuration](https://github.com/docxology/template/blob/main/projects/working/bond/the_living_daylights/tests/conftest.py).
+**Rifle zero.** `ballistics.zero_scope` solves the muzzle elevation such that
+the round lands at height zero at the zero range {{BAL_ZERO_RANGE}} m while the
+sight line — starting `{{BAL_SIGHT_HEIGHT}}` m above bore — passes through the
+same point. Bisection on the simulated impact height yields an elevation of
+{{BAL_ELEVATION_MRAD}} mrad. `capture_zero` then returns the two ranges where
+the trajectory crosses the sight line: near {{BAL_NEAR_ZERO}} m and far
+{{BAL_FAR_ZERO}} m.
 
-**Algorithm — Gradient Descent (implemented in the [optimizer module](https://github.com/docxology/template/blob/main/projects/working/bond/the_living_daylights/src/optimizer.py#L87-L173))**
+**Windage.** Crosswind is treated as a drag-driven lateral relaxation toward
+the wind speed. `ballistics.wind_drift` integrates the lateral offset; at the
+{{BAL_TARGET_RANGE}} m target a {{BAL_WIND_MPS}} m/s full-value wind produces a
+{{BAL_WIND_DRIFT}} m drift, i.e. a {{BAL_WIND_HOLD_MRAD}} mrad wind hold.
+`wind_hold_mrad` returns `-drift / range · 1000`.
 
-> **Input:** Initial point $x_0$, step size $\alpha$, tolerance $\epsilon$, max iterations $N_{\max}$
->
-> 1. Initialize $k \leftarrow 0$
-> 2. **While** $k < N_{\max}$ **do:**
->    - Compute gradient $g_k = \nabla f(x_k)$
->    - **If** $\|g_k\|_2 < \epsilon$ **then return** $x_k$ *(converged)*
->    - Update: $x_{k+1} \leftarrow x_k - \alpha \cdot g_k$
->    - $k \leftarrow k + 1$
-> 3. **Return** $x_k$ *(max iterations reached)*
+**Rules of engagement.** `ballistics.engagement_decision` encodes the film's
+central morality: lethal fire only on a confirmed hostile target. A hostile
+non-target whose weapon is present draws a **trigger-guard**
+(`disable_weapon`) shot rather than a kill, so an innocent third party — the
+cellist — is never engaged.
 
-## Infrastructure Integration
+**The cello case.** `disassemble_takedown_rifle` returns the components of a
+compact takedown rifle; `pack_cello_case` runs deterministic bottom-left shelf
+packing to decide whether the {{CELL_NUM_PARTS}} components fit the cello
+case, reporting {{CELL_LANES}} lanes at {{CELL_EFFICIENCY}} packing efficiency
+and a {{CELL_ASSEMBLY_S}} s field assembly time.
 
-The methodology explicitly bridges theoretical mathematics with production-grade validation through the `infrastructure.scientific` module.
+## Defection-handling protocol (`defection_protocol.py`)
 
-### Numerical Stability Analysis
+`assess_defection` evaluates an ordered, fixed sequence of stages
+(contact, snatch, verify, exfiltrate, relocate). Each stage carries weighted
+risk factors; the stage hazard is the exposure-weighted mean of factor scores,
+and approval is monotonic — a stage cannot proceed until its predecessors pass,
+and the first non-`go` stage becomes the plan gate. The canonical KOSKOV
+scenario (`koskov_scenario`) is deterministic by construction.
 
-Rather than writing ad-hoc validation code, the project imports `infrastructure.scientific.stability.check_numerical_stability`. This utility subjects the objective function to a barrage of extreme inputs (NaN, Inf, $\pm 10^{10}$) to calculate a formalized stability score. If this score degrades, the [analysis orchestrator](https://github.com/docxology/template/blob/main/scripts/pipeline/stage_02_analysis.py) execution deliberately aborts, ensuring the methodology cannot enter unrecoverable states.
+## Terrain ops (`terrain_ops.py`)
 
-### Performance Benchmarking
-
-The analysis exercises [`infrastructure.scientific.benchmarking.benchmark_function`](https://github.com/docxology/template/blob/main/infrastructure/scientific/benchmarking.py) as a runtime diagnostic. Host-dependent timing and memory observations are logged but excluded from tracked evidence. The canonical report records fixed inputs and exact objective values, while the dimensional figure reports deterministic convergence iterations and the proxy $d \times \text{iterations}$; neither surface claims that one host run proves an asymptotic bound.
-
-## Convergence Analysis
-
-For quadratic functions $f(x) = \frac{1}{2}x^T A x - b^T x$ where $A$ is positive definite, the convergence factor becomes [@bertsekas1999nonlinear]:
-
-\begin{equation}
-\label{eq:convergence_factor}
-\rho = \frac{|\lambda_{\max} - \alpha\lambda_{\min}|}{|\lambda_{\min} + \alpha\lambda_{\max}|}
-\end{equation}
-
-Optimal convergence occurs when $\alpha = \frac{2}{\lambda_{\min} + \lambda_{\max}}$, yielding $\rho = \frac{\kappa - 1}{\kappa + 1}$.
-
-## Experimental Setup
-
-### Step Size Analysis
-
-Step sizes are not chosen ad hoc in the manuscript: they are read from `experiment.step_sizes` in `manuscript/config.yaml` and passed through `run_convergence_experiment()` in `src/analysis/` (entry: `scripts/optimization_analysis.py`). The active grid for this build is:
-
-{{CONFIG_STEP_SIZES_BULLETS}}
-
-Labels follow the same agency taxonomy used for plot colours (`_agency_category` in the analysis script): **conservative** (small $\alpha$, slow but stable on $H=I$), **near-optimal** (including $\alpha=1$ where the method reaches $x^\ast$ in one step for this quadratic), **aggressive** ($1 < \alpha < 2$, still linearly contracting in $|x-x^\ast|$ but oscillatory in sign), and **divergent** ($|1-\alpha| \geq 1$).
-
-### Zero-Mock Testing Methodology
-
-The most critical aspect of the project's methodology is its validation framework. The project is governed by a strict Zero-Mock testing policy, evaluated actively by executing `uv run pytest projects/working/bond/the_living_daylights/tests/` during the infrastructure build phase.
-
-1. **Project tests**: [`projects/working/bond/the_living_daylights/tests/test_optimizer.py`](../tests/test_optimizer.py) exercises `src/optimizer.py` (typical, edge, boundary, and pathological inputs including NaN/Inf and zero gradients) and, when infrastructure imports succeed, call into `optimization_analysis.py` helpers—without mocks. Suite size: [`docs/_generated/COUNTS.md`](../../../../docs/_generated/COUNTS.md).
-2. **Infrastructure validation**: The repository-level `tests/infra_tests/` suite validates shared template modules (e.g. pipeline and discovery helpers) independently of this project’s manuscript.
-3. **Coverage Gates**: The [GitHub Actions CI workflow](https://github.com/docxology/template/blob/main/.github/workflows/ci.yml) enforces a mandatory ≥90% statement coverage gate on `projects/working/bond/the_living_daylights/src/` prior to treating the project as build-green.
-
-### Stopping rule and reporting
-
-`gradient_descent()` terminates when $\|\nabla f(x_k)\|$ falls below `experiment.tolerance`, when $k$ reaches `experiment.max_iterations`, or when an objective, gradient, or update becomes non-finite. The boolean `converged` plus `termination_reason` in exported CSV rows distinguish these outcomes. A non-finite candidate is rejected before it enters `objective_history`, preserving the last finite state for reproducible reporting. Downstream, `scripts/z_generate_manuscript_variables.py` aggregates the CSV into `RESULT_*` placeholders so tables and prose cannot drift from the last analysis run.
-
-### Figure generation contract
-
-Each figure in `03_results.md` maps to a generator in `src/figures/` (`generate_convergence_plot`, `generate_step_size_sensitivity_plot`, `generate_convergence_rate_plot`, `generate_complexity_visualization`, `generate_stability_visualization`, `generate_benchmark_visualization`), orchestrated by `src/analysis/` / `scripts/optimization_analysis.py`. Captions in the markdown intentionally name the function and the key parameters (tolerance lines, grids, dimensions) so reviewers can navigate from PDF to code without inferring hidden defaults.
-
-The same generator writes explicit `metadata.alt_text` for every registered
-figure. The alt text states what the visual encodes and preserves the boundary
-between deterministic observations and host-dependent diagnostics. Run the
-opt-in publication migration gate with
-`--require-figure-accessibility` to verify that every referenced figure has
-this metadata before promotion.
-
-## Analysis Pipeline & LaTeX Integration
-
-The automated analysis script leverages [`infrastructure.core.progress`](https://github.com/docxology/template/blob/main/infrastructure/core/progress.py) (`ProgressBar`, `SubStageProgress`) to orchestrate experiments, collect convergence trajectories, and generate publication-quality visualizations seamlessly.
-
-The research template supports advanced LaTeX customization through the `preamble.md` configuration. This is ingested directly by `infrastructure.rendering.latex_utils.py` and `pdf_renderer.py`, automatically linking compiled PGF plots and BibTeX citations. This automated approach ensures an unbreakable chain of custody from raw algorithmic execution to the final rendered manuscript.
+`generate_terrain` builds a seeded elevation + landcover + cover grid
+(`landcover_name` indexes the table). `step_cost` blends per-metre landcover
+cost, an ascent penalty, and an exposure penalty `cover_weight·(1 − cover)`.
+`plan_route` runs Dijkstra's algorithm over 4-adjacent moves with strict
+tie-breaking to find the least-cost path; `assess_cover` audits any route's
+concealment (mean cover, cover points, and the least-covered segment).

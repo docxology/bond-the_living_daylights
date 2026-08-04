@@ -1,25 +1,25 @@
 conditions:
-  - name: conservative_step
+  - name: zero_range_300
     role: reference
-    description: "Stable gradient-descent step below the spectral bound."
-  - name: near_optimal_step
+    description: "Primary rifle zero at 300 m (7.62mm/168gr service round)."
+  - name: wind_5mps
     role: proposed
-    description: "Template-recommended step near the stable convergence region."
-  - name: aggressive_step
+    description: "Full-value 5 m/s crosswind at the 300 m target."
+  - name: cover_weight_8
     role: variant
-    description: "Stress condition near or above the stability boundary."
+    description: "Cover-seeking route planner weighting concealment over speed."
 metrics:
   primary:
-    name: objective_value
-    direction: minimize
-protocol: "Run the deterministic quadratic optimization sweep with identical initialization, seeds, tolerance, and iteration cap across all declared step-size conditions."
+    name: route_mean_cover
+    direction: maximize
+protocol: "Run the deterministic mission solution (compute_mission.mission_solution) with fixed seed, muzzle velocity, zero range, sight height, and wind; route the mountain/desert exfil with the cover-weighted Dijkstra planner."
 expected_figures:
-  - fig:convergence_plot
-  - fig:performance_benchmark
-  - fig:step_size_sensitivity
+  - fig:ballistics
+  - fig:terrain
 expected_tables:
-  - tbl:optimization_results
+  - tbl:mission_solution
 baselines:
-  - conservative_step
+  - zero_range_300
 ablations:
-  - aggressive_step
+  - wind_5mps
+  - cover_weight_8
