@@ -95,3 +95,47 @@ def test_assessment_dataclass_validation() -> None:
         d.DefectionAssessment((), -0.1, "go", (), None)
     with pytest.raises(ValueError):
         d.DefectionAssessment((), 0.5, "bogus", (), None)
+
+
+# --- evidence verification ---
+
+
+def test_evidence_check_validation() -> None:
+    with pytest.raises(ValueError):
+        d.EvidenceCheck("", 0.5, 0.5)
+    with pytest.raises(ValueError):
+        d.EvidenceCheck("x", -0.1, 0.5)
+    with pytest.raises(ValueError):
+        d.EvidenceCheck("x", 1.5, 0.5)
+    with pytest.raises(ValueError):
+        d.EvidenceCheck("x", 0.5, -0.1)
+    with pytest.raises(ValueError):
+        d.EvidenceCheck("x", 0.5, 1.5)
+
+
+def test_verification_certainty_weighted_mean() -> None:
+    checks = (d.EvidenceCheck("a", 1.0, 0.5),)
+    assert math.isclose(d.verification_certainty(checks), 0.5)
+    checks_two = (d.EvidenceCheck("a", 0.5, 1.0), d.EvidenceCheck("b", 0.5, 0.0))
+    assert math.isclose(d.verification_certainty(checks_two), 0.5)
+    with pytest.raises(ValueError):
+        d.verification_certainty((d.EvidenceCheck("a", 0.0, 0.5),))
+
+
+def test_backstop_verdict_thresholds() -> None:
+    assert d.backstop_verdict(0.9) == "cleared"
+    assert d.backstop_verdict(0.7) == "conditional"
+    assert d.backstop_verdict(0.3) == "rejected"
+    assert d.backstop_verdict(0.85) == "cleared"  # hard threshold inclusive
+    with pytest.raises(ValueError):
+        d.backstop_verdict(1.5)
+    with pytest.raises(ValueError):
+        d.backstop_verdict(0.5, soft_threshold=0.7, hard_threshold=0.6)
+
+
+def test_koskov_verification_certainty_and_verdict() -> None:
+    checks = d.koskov_verification()
+    assert len(checks) == 4
+    certainty = d.verification_certainty(checks)
+    assert math.isclose(certainty, 0.67, abs_tol=1e-9)
+    assert d.backstop_verdict(certainty) == "conditional"

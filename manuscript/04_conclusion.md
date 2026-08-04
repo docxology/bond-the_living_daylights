@@ -6,9 +6,15 @@ can be turned into real, deterministic, testable algorithms. The package:
 * solves the **sniper ballistics** problem — zero, windage, rules-of-engagement,
   and cello-case concealment — with a physically grounded point-mass integrator;
 * runs a **staged, risk-scored defection protocol** whose hazard model renders
-  the canonical scenario conditional at the verify gate;
+  the canonical scenario conditional at the verify gate, backed by an
+  **evidence-verification** model whose weighted backstop checks corroborate
+  the verdict;
 * plans **mountain/desert routes with cover** on a seeded, reproducible
-  terrain grid;
+  terrain grid, and selects the **overwatch nest** — the ranked position that
+  actually sees the extraction site with concealment and elevation advantage;
+* fights the **countersniper duel** — mil-dot ranging and click solutions on
+  the riflescope, radiometric optic-glint detection, acoustic crack-bang
+  ranging, and least-squares bearing triangulation of a hostile position;
 * binds all of it to the frozen BOND-API `MissionProvider` protocol so the
   orchestrator can drive the film generically, with full deterministic
   provenance on every outcome.

@@ -23,12 +23,16 @@ __all__ = [
     "CONSTANT_TOLERANCE",
     "DEFAULT_STAGES",
     "DefectionAssessment",
+    "EvidenceCheck",
     "RiskFactor",
     "StageRiskInput",
     "StageAssessment",
     "assess_defection",
+    "backstop_verdict",
     "koskov_scenario",
+    "koskov_verification",
     "stage_score",
+    "verification_certainty",
 ]
 
 #: Stages of the defection-handling protocol, in execution order.
@@ -246,4 +250,74 @@ def koskov_scenario() -> tuple[StageRiskInput, ...]:
                 RiskFactor("follow-on pursuit", 0.40, 0.65),
             ),
         ),
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Evidence verification — the verify stage's backstop model.
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class EvidenceCheck:
+    """A single backstop verification check on the defecting asset."""
+
+    label: str
+    weight: float  # relative importance of the check
+    result: float  # observed pass score, 0 (failed) .. 1 (fully passed)
+
+    def __post_init__(self) -> None:
+        if self.label is None or not str(self.label).strip():
+            raise ValueError("EvidenceCheck.label must be a non-empty string")
+        if not (0.0 <= self.weight <= 1.0):
+            raise ValueError("EvidenceCheck.weight must be in [0, 1]")
+        if not (0.0 <= self.result <= 1.0):
+            raise ValueError("EvidenceCheck.result must be in [0, 1]")
+
+
+def verification_certainty(checks: Sequence[EvidenceCheck]) -> float:
+    """Weighted-mean certainty in ``[0, 1]`` over the backstop checks.
+
+    Same exposure-weighting scheme as :func:`stage_score`: the certainty is
+    the weight-normalized sum of the per-check results, clamped to ``[0, 1]``.
+    """
+    total_weight = sum(c.weight for c in checks)
+    if total_weight <= 0:
+        raise ValueError("verification_certainty requires positive total weight")
+    weighted = sum(c.weight * c.result for c in checks)
+    return max(0.0, min(1.0, weighted / total_weight))
+
+
+def backstop_verdict(
+    certainty: float, *, soft_threshold: float = 0.60, hard_threshold: float = 0.85
+) -> str:
+    """Verdict on the asset's identity from accumulated verification certainty.
+
+    ``cleared`` when certainty is at/above ``hard_threshold``, ``conditional``
+    at/above ``soft_threshold``, otherwise ``rejected``. Deterministic.
+    """
+    if not (0.0 <= certainty <= 1.0):
+        raise ValueError("certainty must be in [0, 1]")
+    if not (0.0 <= soft_threshold <= hard_threshold <= 1.0):
+        raise ValueError("thresholds must satisfy 0 <= soft <= hard <= 1")
+    if certainty >= hard_threshold:
+        return "cleared"
+    if certainty >= soft_threshold:
+        return "conditional"
+    return "rejected"
+
+
+def koskov_verification() -> tuple[EvidenceCheck, ...]:
+    """The canonical backstop checks on General Koskov (deterministic).
+
+    Encodes the film's verification doubt: documents and the cover story are
+    plausible, but backstop telegraphy and debrief consistency are only
+    partially convincing — which is exactly why the verify stage gates the
+    plan as ``conditional``.
+    """
+    return (
+        EvidenceCheck("identity_documents", 0.25, 0.70),
+        EvidenceCheck("debrief_consistency", 0.30, 0.65),
+        EvidenceCheck("backstop_telegraphy", 0.25, 0.60),
+        EvidenceCheck("cover_story_plausibility", 0.20, 0.75),
     )

@@ -36,6 +36,10 @@ def test_generate_variables_content() -> None:
     assert variables["BAL_ZERO_RANGE"] == "300"
     assert variables["DEF_PLAN_VERDICT"] == "conditional"
     assert variables["TER_DIST_KM"]
+    assert variables["OPT_MIL_RANGE_M"] == "300"
+    assert variables["CS_GLINT_PDET"]
+    assert variables["OW_BEST_CELL"]
+    assert variables["VER_VERDICT"] == "conditional"
     assert all(isinstance(k, str) and isinstance(v, str) for k, v in variables.items())
     assert variables["GENERATION_TIMESTAMP"] == "2026-08-04T12:00:00+00:00"
 

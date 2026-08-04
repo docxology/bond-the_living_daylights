@@ -54,3 +54,45 @@ identified. Figure [@fig:terrain] maps the route and its cover points on the
 concealment field.
 
 ![Planned exfil route on the concealment map](../output/figures/terrain_exfil_route.png){#fig:terrain}
+
+## Countersniper optics
+
+The {{OPT_MAGNIFICATION}}x mil-dot riflescope ({{OPT_OBJECTIVE_MM}} mm
+objective, {{OPT_CLICK_MRAD}} mrad clicks) ranges the standing target at
+{{OPT_MIL_RANGE_M}} m from the {{MIL_READING_MILS}}-mil reticle span and holds
+{{OPT_HOLDOVER_MILS}} mils against the {{BAL_TARGET_RANGE}} m drop. The zero
+dials onto the turret as {{OPT_ELEVATION_CLICKS}} elevation clicks and
+{{OPT_WIND_CLICKS}} wind clicks; at the target range the first-order parallax
+shift is {{OPT_PARALLAX_MM}} mm.
+
+## Countersniper detection and localization
+
+The hostile optic glints with a geometric brightness of {{CS_GLINT_GEOMETRY}}
+at the {{CS_AZIMUTH_DELTA_DEG}}° sun–observer offset; the radiometric model
+yields SNR {{CS_GLINT_SNR}} at {{CS_GLINT_RANGE_M}} m and a detection
+probability of {{CS_GLINT_PDET}} (Figure [@fig:glint]). Acoustically, the
+{{CRACK_BANG_DELAY_S}} s crack-bang delay at {{AIR_TEMP_C}} °C places the shot
+{{CS_CRACK_BANG_M}} m away (sound speed {{CS_SOUND_SPEED}} m/s); crossed
+bearings localize the hostile to ({{CS_TRI_X_M}}, {{CS_TRI_Y_M}}) m with a
+{{CS_TRI_RESIDUAL_M}} m residual.
+
+![Countersniper optic-glint detection probability vs range](../output/figures/glint_detection.png){#fig:glint}
+
+## Overwatch selection
+
+The extraction site sits at {{OW_TARGET_CELL}} — the terrain's low point, in a
+near-total blind spot: of the {{OW_NUM_CANDIDATES}} in-range candidate
+positions, only {{OW_VISIBLE_CANDIDATES}} ({{OW_VISIBLE_FRACTION}} fraction)
+can see it. The ranked best nest at {{OW_BEST_CELL}} commands the site from
+{{OW_BEST_DISTANCE_M}} m with {{OW_BEST_ELEV_GAIN_M}} m of elevation advantage
+and {{OW_BEST_COVER}} concealment, scoring {{OW_BEST_SCORE}} (Figure
+[@fig:overwatch]).
+
+![Ranked overwatch nests for the extraction site](../output/figures/overwatch_nests.png){#fig:overwatch}
+
+## Evidence verification
+
+The verify stage's backstop model accumulates {{VER_NUM_CHECKS}} weighted
+checks (identity documents, debrief consistency, backstop telegraphy, cover
+story) into a certainty of {{VER_CERTAINTY}}, rendering the verdict
+**{{VER_VERDICT}}** — consistent with the plan's {{DEF_GATE}} gate.

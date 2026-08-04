@@ -1,10 +1,14 @@
 """SNIPER'S NEST — deterministic matplotlib figures for the manuscript.
 
-Renders two plates from the pure domain modules (Agg backend, no display):
+Renders four plates from the pure domain modules (Agg backend, no display):
 * :func:`render_ballistics_figure` — the zeroed trajectory against the sight
   line, with the near/far zero and a wind-drift panel;
 * :func:`render_terrain_figure` — the seeded mountain/desert grid with the
-  planned exfil route and its cover points.
+  planned exfil route and its cover points;
+* :func:`render_glint_figure` — the countersniper optic-glint detection
+  probability against range;
+* :func:`render_overwatch_figure` — the extraction site, the ranked sniper
+  nests, and the best nest's sight line.
 
 Everything derives from the domain modules (no RNG beyond the seeded terrain,
 no wall-clock). Output lands under ``output/figures/`` (git-ignored).
@@ -17,13 +21,16 @@ from pathlib import Path
 import matplotlib
 import matplotlib.pyplot as plt
 
-from the_living_daylights import ballistics, settings, terrain_ops
+from the_living_daylights import ballistics, countersniper, settings, terrain_ops
+from the_living_daylights.compute_mission import mission_solution
 
 matplotlib.use("Agg")
 
 __all__ = [
     "render_all_figures",
     "render_ballistics_figure",
+    "render_glint_figure",
+    "render_overwatch_figure",
     "render_terrain_figure",
 ]
 
@@ -108,6 +115,93 @@ def render_terrain_figure(output_dir: Path | None = None) -> Path:
     return path
 
 
+def render_glint_figure(output_dir: Path | None = None) -> Path:
+    """Plot countersniper optic-glint detection probability against range."""
+    out = output_dir if output_dir is not None else _output_dir()
+    sol = mission_solution()
+    geo = float(sol["countersniper"]["glint_geometry_factor"])
+    ranges = list(range(100, 2001, 100))
+    probs = [
+        countersniper.glint_detection_probability(
+            countersniper.glint_snr(
+                r,
+                settings.SCOPE.objective_diameter_mm,
+                geo,
+                resolution_mrad=settings.RESOLUTION_MRAD,
+                reflectivity=settings.LENS_REFLECTIVITY,
+            )
+        )
+        for r in ranges
+    ]
+    mission_range = float(settings.GLINT_RANGE_M)
+    mission_prob = float(sol["countersniper"]["glint_detection_probability"])
+
+    fig, ax = plt.subplots(figsize=(6.5, 4.2))
+    ax.plot(ranges, probs, color="#cf222e")
+    ax.axvline(mission_range, color="#1f6feb", ls=":", lw=1.2)
+    ax.plot(mission_range, mission_prob, "o", color="#1f6feb", ms=6)
+    ax.annotate(
+        f"mission range {mission_range:.0f} m  P(det) = {mission_prob:.3f}",
+        (mission_range, mission_prob),
+        xytext=(mission_range * 0.45, mission_prob + 0.12),
+        fontsize=8,
+        arrowprops={"arrowstyle": "->", "lw": 0.8},
+    )
+    ax.set_xlabel("range (m)")
+    ax.set_ylabel("glint detection probability")
+    ax.set_title("Countersniper optic-glint detection vs range")
+    ax.grid(alpha=0.3)
+
+    fig.tight_layout()
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / "glint_detection.png"
+    fig.savefig(path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def render_overwatch_figure(output_dir: Path | None = None) -> Path:
+    """Plot the extraction site, ranked sniper nests, and the best nest line."""
+    out = output_dir if output_dir is not None else _output_dir()
+    sol = mission_solution()
+    grid = terrain_ops.generate_terrain(
+        settings.TERRAIN_N, settings.TERRAIN_SEED, settings.TERRAIN_CELL_SIZE_M
+    )
+    target = tuple(int(v) for v in sol["overwatch"]["target_cell"])
+    best = (
+        tuple(int(v) for v in sol["overwatch"]["best_cell"])
+        if sol["overwatch"]["best_cell"]
+        else None
+    )
+    top_three = [tuple(int(v) for v in cell) for cell, _score in sol["overwatch"]["top_three"]]
+    cover = grid.cover_array()
+
+    fig, ax = plt.subplots(figsize=(6.5, 6.0))
+    im = ax.imshow(cover, origin="lower", cmap="Greens", vmin=0.0, vmax=1.0)
+    ax.set_title(f"Overwatch nests for the extraction site (seed {settings.TERRAIN_SEED})")
+    ax.plot(target[1], target[0], "*", color="yellow", ms=13, zorder=6, label="extraction site")
+    if best is not None:
+        ax.plot(best[1], best[0], "D", color="#1f6feb", ms=7, zorder=6, label="best nest")
+        ax.plot([target[1], best[1]], [target[0], best[0]], color="#1f6feb", ls="--", lw=1.1)
+    for idx, cell in enumerate(top_three[:3], start=1):
+        ax.plot(cell[1], cell[0], "o", ms=5, color="#cf222e", zorder=5)
+        ax.annotate(str(idx), (cell[1], cell[0]), fontsize=7, color="#cf222e")
+    ax.legend(loc="upper right", fontsize=8)
+    fig.colorbar(im, ax=ax, label="concealment cover (0–1)")
+
+    fig.tight_layout()
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / "overwatch_nests.png"
+    fig.savefig(path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
 def render_all_figures(output_dir: Path | None = None) -> list[Path]:
     """Render every manuscript plate and return their paths (deterministic)."""
-    return [render_ballistics_figure(output_dir), render_terrain_figure(output_dir)]
+    return [
+        render_ballistics_figure(output_dir),
+        render_terrain_figure(output_dir),
+        render_glint_figure(output_dir),
+        render_overwatch_figure(output_dir),
+    ]

@@ -12,7 +12,10 @@ and mountain/desert terrain operations. It implements the frozen BOND-API
 | Module | Concept |
 | --- | --- |
 | [`src/the_living_daylights/ballistics.py`](src/the_living_daylights/ballistics.py) | Rifle zero (elevation + near/far zero), windage (drift + wind hold), rules-of-engagement (the trigger-guard hold), cello-case packing. Point-mass RK4 external ballistics. |
-| [`src/the_living_daylights/defection_protocol.py`](src/the_living_daylights/defection_protocol.py) | Staged (contact → relocate), risk-scored defection handling with monotonic approval and a plan gate. |
+| [`src/the_living_daylights/optics.py`](src/the_living_daylights/optics.py) | Countersniper scope optics: MOA/mrad click conversions, mil-dot reticle ranging, holdover, first-order parallax, field of view. |
+| [`src/the_living_daylights/countersniper.py`](src/the_living_daylights/countersniper.py) | Countersniper detection: radiometric optic-glint detection, acoustic crack-bang ranging, least-squares bearing triangulation. |
+| [`src/the_living_daylights/visibility.py`](src/the_living_daylights/visibility.py) | Terrain line-of-sight and viewsheds, plus ranked overwatch (sniper's nest) selection. |
+| [`src/the_living_daylights/defection_protocol.py`](src/the_living_daylights/defection_protocol.py) | Staged (contact → relocate), risk-scored defection handling with monotonic approval, plan gate, and backstop evidence verification. |
 | [`src/the_living_daylights/terrain_ops.py`](src/the_living_daylights/terrain_ops.py) | Seeded mountain/desert grid, cover-weighted Dijkstra routing, and independent cover audit. |
 | [`src/the_living_daylights/compute_mission.py`](src/the_living_daylights/compute_mission.py) | The single deterministic mission solution that both the mission report and the manuscript read. |
 | [`src/the_living_daylights/mission.py`](src/the_living_daylights/mission.py) | Thin adapter implementing the frozen BOND-API mission protocol + gadget registry. |

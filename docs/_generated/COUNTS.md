@@ -5,8 +5,8 @@
 
 | Metric | Value |
 | --- | --- |
-| Test count | 58 |
-| Coverage (line + branch, `src/`) | 95.33% |
+| Test count | 93 |
+| Coverage (line + branch, `src/`) | 96.92% |
 | Coverage gate | `--cov-fail-under=90` |
 
 Command used to regenerate:

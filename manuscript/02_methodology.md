@@ -57,3 +57,65 @@ cost, an ascent penalty, and an exposure penalty `cover_weight·(1 − cover)`.
 `plan_route` runs Dijkstra's algorithm over 4-adjacent moves with strict
 tie-breaking to find the least-cost path; `assess_cover` audits any route's
 concealment (mean cover, cover points, and the least-covered segment).
+
+## Countersniper optics (`optics.py`)
+
+The riflescope is a fixed-parameter `ScopeSpec` ({{OPT_MAGNIFICATION}}x,
+{{OPT_OBJECTIVE_MM}} mm objective, {{OPT_CLICK_MRAD}} mrad clicks). Two
+conversion families matter operationally:
+
+* **Turret clicks** — `clicks_for_angle` converts an angular correction
+  (milliradians) into whole clicks of the turret's click unit, and
+  `zero_click_schedule` turns the ballistic solution into the scope's
+  elevation/wind click counts ({{OPT_ELEVATION_CLICKS}} elevation /
+  {{OPT_WIND_CLICKS}} wind for the zeroed mission).
+* **Mil-dot ranging** — the milliradian relation `range = size·1000/mils`
+  (`mil_dot_range`) fixes the target at {{OPT_MIL_RANGE_M}} m from a
+  {{OPT_HOLDOVER_MILS}} mil reticle span; `holdover_mils` converts the
+  ballistic drop into the reticle holdover, and `parallax_shift_m` models the
+  first-order sight shift when the target range differs from the
+  parallax-focus range ({{OPT_PARALLAX_MM}} mm at the {{BAL_TARGET_RANGE}} m
+  target). Ranging follows the standard mil-dot doctrine
+  [@fm2310sniper].
+
+## Countersniper detection (`countersniper.py`)
+
+A hostile sniper is found three ways, all deterministic:
+
+* **Optic glint** — the lens reflects sunlight: `glint_geometry_factor`
+  combines a cosine sun-elevation term with a specular azimuth falloff
+  ({{CS_GLINT_GEOMETRY}} at the mission's {{CS_AZIMUTH_DELTA_DEG}}° sun–observer
+  offset), and `glint_contrast` compares the reflected radiance against sky
+  radiance (the solar reference follows [@astmg173]). `glint_snr` multiplies
+  that range-independent contrast by the lens's angular size at the observer,
+  so SNR falls as range²; `glint_detection_probability` is the
+  signal-detection CDF of SNR against a threshold
+  ([@vantrees1968]). At {{CS_GLINT_RANGE_M}} m the hostile optic yields
+  SNR {{CS_GLINT_SNR}} and P(det) = {{CS_GLINT_PDET}}.
+* **Acoustic crack-bang** — the flash-to-bang delay scaled by the speed of
+  sound `c(T) = 331.3 + 0.606·T` ([@kinsler2000]) places the shot
+  {{CS_CRACK_BANG_M}} m away from the {{CRACK_BANG_DELAY_S}} s delay; the
+  mission's {{CS_SOUND_SPEED}} m/s at {{AIR_TEMP_C}} °C.
+* **Bearing triangulation** — `triangulate_position` solves the least-squares
+  intersection of true-azimuth bearings: the normal equations place the
+  hostile at ({{CS_TRI_X_M}}, {{CS_TRI_Y_M}}) m with a
+  {{CS_TRI_RESIDUAL_M}} m residual (acoustic localization per
+  [@duckworth1996counter], [@bedford2008modelling]).
+
+## Terrain visibility (`visibility.py`)
+
+`line_of_sight` walks a deterministic Bresenham cell line between two cells and
+blocks when an intermediate cell's terrain+cover top rises above the
+interpolated sight ray minus a clearance; `viewshed` collects every cell
+visible from an observer. `rank_overwatch_positions` scores candidate sniper
+nests for the extraction site as a weighted blend of target visibility,
+proximity, cover, and elevation advantage; `best_overwatch` returns the top
+visible position. Viewshed methodology follows the terrain-visibility
+literature [@fisher1996viewshed].
+
+## Evidence verification (`defection_protocol.py`)
+
+The verify stage's backstop model (`EvidenceCheck`, `verification_certainty`,
+`backstop_verdict`) accumulates weighted evidence into a certainty score and
+maps it onto cleared/conditional/rejected verdicts — the operational analogue
+of sequential verification against documentary and telegraphic backstops.

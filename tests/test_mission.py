@@ -32,6 +32,8 @@ def test_plan_steps() -> None:
     plan = provider.plan(provider.brief())
     assert len(plan.steps) >= 4
     assert plan.steps[0].action == "solve_rifle_zero"
+    names = [step.name for step in plan.steps]
+    assert {"optics", "countersniper", "verification"} <= set(names)
 
 
 def test_execute_deterministic_and_provenance() -> None:
@@ -49,6 +51,10 @@ def test_full_mission_flow() -> None:
     assert debrief.outcome.success is True
     assert len(debrief.lessons) > 0
     assert debrief.outcome.results["defection"]["gate_stage"] == "verify"
+    assert "optics" in debrief.outcome.results
+    assert "countersniper" in debrief.outcome.results
+    assert "overwatch" in debrief.outcome.results
+    assert "verification" in debrief.outcome.results
 
 
 def test_gadget_registration_module_and_explicit() -> None:
@@ -59,4 +65,8 @@ def test_gadget_registration_module_and_explicit() -> None:
     assert set(registry.gadgets_for("the_living_daylights")) >= {
         "rifle_profile",
         "terrain_generator",
+        "scope_spec",
+        "glint_detector",
+        "viewshed",
+        "verification_checks",
     }

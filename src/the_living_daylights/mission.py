@@ -29,7 +29,14 @@ from bond_api.protocol import (
 )
 from bond_api.registry import GadgetRegistry
 
-from the_living_daylights import ballistics, defection_protocol, settings, terrain_ops
+from the_living_daylights import (
+    ballistics,
+    countersniper,
+    defection_protocol,
+    settings,
+    terrain_ops,
+    visibility,
+)
 from the_living_daylights.compute_mission import input_hash, mission_solution
 
 __all__ = ["GADGETS", "MissionProvider", "register_gadgets"]
@@ -51,8 +58,14 @@ def register_gadgets(registry: GadgetRegistry) -> None:
                 "caliber_m": settings.PROJECTILE.caliber_m,
                 "ballistic_coefficient_kg_m2": settings.PROJECTILE.ballistic_coefficient,
             },
+            "scope_spec": settings.SCOPE,
+            "glint_detector": countersniper.glint_detection_probability,
+            "acoustic_ranger": countersniper.crack_bang_range,
+            "localizer": countersniper.triangulate_position,
+            "viewshed": visibility.viewshed,
             "cello_case_rig": ballistics.disassemble_takedown_rifle,
             "defection_protocol": defection_protocol.koskov_scenario,
+            "verification_checks": defection_protocol.koskov_verification,
             "terrain_generator": terrain_ops.generate_terrain,
         },
     )
@@ -79,6 +92,14 @@ class MissionProvider:  # noqa: N801 — class name is fixed by the discovery co
                     kind="ballistics",
                     name="rifle_profile",
                     payload=settings.PROJECTILE.ballistic_coefficient,
+                ),
+                Asset(
+                    kind="optics",
+                    name="scope_spec",
+                    payload={
+                        "magnification": settings.SCOPE.magnification,
+                        "click_size_mrad": settings.SCOPE.click_size,
+                    },
                 ),
                 Asset(
                     kind="concealment",
@@ -117,6 +138,14 @@ class MissionProvider:  # noqa: N801 — class name is fixed by the discovery co
                     label="ballistics",
                     detail=f"7.62mm service round, BC {proj.ballistic_coefficient:.1f} kg/m^2",
                 ),
+                Finding(
+                    label="optics",
+                    detail="10x mil-dot riflescope, 0.1 mrad clicks, 50 mm objective",
+                ),
+                Finding(
+                    label="countersniper",
+                    detail="optic-glint radiometry, crack-bang ranging, bearing triangulation",
+                ),
                 Finding(label="concealment", detail="takedown rifle packs into a cello case"),
                 Finding(
                     label="constraint",
@@ -126,7 +155,7 @@ class MissionProvider:  # noqa: N801 — class name is fixed by the discovery co
         )
 
     def plan(self, brief: MissionBrief) -> MissionPlan:
-        """Plan the deterministic five-step mission flow."""
+        """Plan the deterministic eight-step mission flow."""
         return MissionPlan(
             steps=(
                 Step(
@@ -138,9 +167,24 @@ class MissionProvider:  # noqa: N801 — class name is fixed by the discovery co
                     name="windage", action="solve_wind_hold", params={"wind_mps": settings.WIND_MPS}
                 ),
                 Step(
+                    name="optics",
+                    action="range_and_click_schedule",
+                    params={"mils": settings.MIL_READING_MILS},
+                ),
+                Step(
+                    name="countersniper",
+                    action="detect_and_localize",
+                    params={"glint_range_m": settings.GLINT_RANGE_M},
+                ),
+                Step(
                     name="defection",
                     action="assess_defection_risk",
                     params={"stages": len(brief.objectives)},
+                ),
+                Step(
+                    name="verification",
+                    action="backstop_evidence_check",
+                    params={"checks": "koskov"},
                 ),
                 Step(
                     name="route", action="plan_exfil_route", params={"seed": settings.TERRAIN_SEED}
@@ -172,6 +216,8 @@ class MissionProvider:  # noqa: N801 — class name is fixed by the discovery co
             lessons=(
                 "the innocent are never a target: hold fire on the cellist",
                 "a trigger-guard shot disables a hostile without a lethal error",
+                "optic glints, crack-bang delays, and crossed bearings localize a hostile sniper",
+                "the overwatch nest is the ranked position that sees the site with cover",
                 "deterministic provenance makes every field report auditable",
                 "covered exfil routes beat fast but exposed ones in mountain/desert ops",
             ),

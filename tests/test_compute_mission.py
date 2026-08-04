@@ -2,16 +2,39 @@
 
 from __future__ import annotations
 
+import pytest
+
 from the_living_daylights.compute_mission import input_hash, mission_solution
 
 
 def test_mission_solution_keys() -> None:
     sol = mission_solution()
-    for key in ("ballistics", "rules_of_engagement", "cello_case", "defection", "terrain"):
+    for key in (
+        "ballistics",
+        "rules_of_engagement",
+        "optics",
+        "countersniper",
+        "cello_case",
+        "defection",
+        "verification",
+        "terrain",
+        "overwatch",
+    ):
         assert key in sol
     assert sol["cello_case"]["fits"] is True
     assert sol["defection"]["plan_verdict"] == "conditional"
     assert sol["defection"]["gate_stage"] == "verify"
+    assert sol["verification"]["verdict"] == "conditional"
+
+
+def test_mission_solution_new_concept_values() -> None:
+    sol = mission_solution()
+    assert sol["optics"]["mil_dot_range_m"] == pytest.approx(300.0)
+    assert sol["optics"]["elevation_clicks"] > 0
+    assert 0.0 < float(sol["countersniper"]["glint_detection_probability"]) < 1.0
+    assert sol["overwatch"]["best_cell"] is not None
+    assert sol["overwatch"]["visible_candidates"] >= 1
+    assert sol["countersniper"]["crack_bang_range_m"] == pytest.approx(686.8, abs=1.0)
 
 
 def test_mission_solution_deterministic() -> None:

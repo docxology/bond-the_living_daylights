@@ -22,8 +22,15 @@ orchestrator by slug on `sys.path`.
 * **Sniper ballistics** — point-mass RK4 external ballistics: rifle zero
   (elevation + near/far zero), windage (drift + wind hold), rules-of-engagement
   (the trigger-guard hold), cello-case packing.
-* **Defection handling** — a staged (contact → relocate), risk-scored protocol
-  with weighted hazards, monotonic approval, and a plan gate.
+* **Countersniper optics** — scope click math (MOA/mrad), mil-dot reticle
+  ranging, holdover, parallax, field of view.
+* **Countersniper detection** — radiometric optic-glint detection, acoustic
+  crack-bang ranging, and least-squares bearing triangulation.
+* **Terrain visibility** — line-of-sight and viewsheds plus ranked overwatch
+  (sniper's nest) selection.
+* **Defection handling** — a staged (contact → relocate), risk-scored
+  protocol with weighted hazards, monotonic approval, a plan gate, and backstop
+  evidence verification.
 * **Terrain ops** — seeded mountain/desert grid, cover-weighted Dijkstra
   routing, and independent cover audit.
 
