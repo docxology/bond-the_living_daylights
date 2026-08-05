@@ -93,6 +93,53 @@ def test_triangulate_position_exact_intersection() -> None:
     assert residual < 1e-6
 
 
+def test_two_bearing_residual_is_zero_by_construction_not_measured() -> None:
+    """Documents a limitation rather than claiming a result.
+
+    Two non-parallel bearings are two equations in two unknowns: the fit passes
+    exactly through the intersection, so the residual is identically zero for
+    *every* such pair. A near-zero residual from a two-observer fix therefore
+    says nothing about localization accuracy — it is arithmetic, not evidence.
+    The mission's own configuration
+    (``settings.TRIANGULATION_OBSERVERS``) is one of these cases.
+    """
+    exactly_determined = [
+        ([(0.0, 0.0), (100.0, 0.0)], [45.0, 135.0]),
+        ([(0.0, 0.0), (500.0, 250.0)], [30.0, 300.0]),
+        ([(-40.0, 10.0), (60.0, -80.0)], [5.0, 95.0]),
+        ([(12.0, 34.0), (-56.0, 78.0)], [170.0, 20.0]),
+    ]
+    for observers, bearings in exactly_determined:
+        _x, _y, residual = cs.triangulate_position(observers, bearings)
+        assert residual < 1e-9, (observers, bearings, residual)
+
+
+def test_over_determined_bearings_produce_a_real_nonzero_residual() -> None:
+    """Positive control: the residual code path can report a large number.
+
+    Three mutually inconsistent bearings — ``y = x`` (from the origin at 45°),
+    ``x + y = 100`` (from (100, 0) at 135°), and ``y = 100`` (from (0, 100) due
+    east) — meet pairwise but never all at once. Minimising the summed squared
+    perpendicular distance gives, by hand:
+
+        f(x, y) = (x-y)^2/2 + (x+y-100)^2/2 + (y-100)^2
+        df/dx = 2x - 100 = 0            ->  x = 50
+        df/dy = 4y - 300 = 0            ->  y = 75
+        perpendicular distances         =  25/sqrt(2), 25/sqrt(2), 25
+        RMS residual                    =  sqrt(1250/3) = 20.4124 m
+
+    Both the fitted point and the residual are pinned to that closed form, so
+    a wrong normal-equation solve or a wrong residual norm shows up here.
+    """
+    observers = [(0.0, 0.0), (100.0, 0.0), (0.0, 100.0)]
+    bearings = [45.0, 135.0, 90.0]
+    x, y, residual = cs.triangulate_position(observers, bearings)
+    assert x == pytest.approx(50.0, abs=1e-9)
+    assert y == pytest.approx(75.0, abs=1e-9)
+    assert residual == pytest.approx(math.sqrt(1250.0 / 3.0), abs=1e-9)
+    assert residual > 20.0  # unmistakably not float noise
+
+
 def test_triangulate_position_three_observers() -> None:
     observers = [(0.0, 0.0), (100.0, 0.0), (0.0, 100.0)]
     bearings = [45.0, 135.0, 135.0]  # all three lines meet exactly at (50,50)

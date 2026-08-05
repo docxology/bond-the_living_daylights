@@ -125,6 +125,14 @@ def mission_solution(
         grid, settings.ROUTE_START, settings.ROUTE_GOAL, cover_weight=cover_weight
     )
     cover = terrain_ops.assess_cover(grid, route.path)
+    # Baselines for the cover term, so "covered route" is a measured comparison
+    # rather than an adjective. `bare_route` is the same planner with the
+    # exposure term switched off; `field_mean_cover` is the grid's own average
+    # concealment — the level an arbitrary path would score.
+    bare_route = terrain_ops.plan_route(
+        grid, settings.ROUTE_START, settings.ROUTE_GOAL, cover_weight=0.0
+    )
+    field_mean_cover = float(grid.cover_array().mean())
 
     # --- overwatch selection (sniper's nest) ---
     # The extraction site is the grid's low point (a wadi-like cell).
@@ -144,7 +152,17 @@ def mission_solution(
         clearance_m=settings.OVERWATCH_CLEARANCE_M,
         max_range_cells=settings.OVERWATCH_MAX_RANGE_CELLS,
     )
-    best = ranked[0] if ranked else None
+    # The reported nest must SEE the site, so selection goes through
+    # visibility.best_overwatch (top-scored *visible* candidate) rather than
+    # ranked[0], which is merely the top-scored candidate and can be blind.
+    best = visibility.best_overwatch(
+        grid,
+        target_cell,
+        candidates,
+        eye_height_m=settings.OVERWATCH_EYE_HEIGHT_M,
+        clearance_m=settings.OVERWATCH_CLEARANCE_M,
+        max_range_cells=settings.OVERWATCH_MAX_RANGE_CELLS,
+    )
     visible_count = sum(1 for r in ranked if r.visible)
     top_three = tuple((r.cell, float(r.score)) for r in ranked[:3])
 
@@ -234,6 +252,10 @@ def mission_solution(
             "min_cover_index": route.min_cover_index,
             "cover_points": len(route.cover_points),
             "audit_mean_cover": float(cast("float", cover["mean_cover"])),
+            "field_mean_cover": field_mean_cover,
+            "bare_mean_cover": bare_route.mean_cover,
+            "cover_term_gain": route.mean_cover - bare_route.mean_cover,
+            "cover_vs_field": route.mean_cover - field_mean_cover,
             "start": settings.ROUTE_START,
             "goal": settings.ROUTE_GOAL,
         },
@@ -248,6 +270,9 @@ def mission_solution(
             "best_distance_m": best.distance_m if best is not None else 0.0,
             "best_cover": best.cover if best is not None else 0.0,
             "best_elevation_gain_m": best.elevation_gain_m if best is not None else 0.0,
+            "best_visible": bool(best.visible) if best is not None else False,
+            "top_scored_cell": ranked[0].cell if ranked else None,
+            "top_scored_is_visible": bool(ranked[0].visible) if ranked else False,
             "top_three": top_three,
         },
         "determinism": {

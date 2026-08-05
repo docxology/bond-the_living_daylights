@@ -52,6 +52,45 @@ def test_wind_sensitivity() -> None:
     assert abs(breezy) > abs(calm)
 
 
+def test_reported_overwatch_nest_can_see_the_site() -> None:
+    """The nest the mission reports must be visible, not merely top-scored.
+
+    ``rank_overwatch_positions`` scores blind candidates too (they keep the
+    proximity, cover, and elevation terms), so ``ranked[0]`` carries no
+    visibility guarantee. The solution must go through the visible filter.
+    """
+    ow = mission_solution()["overwatch"]
+    assert ow["best_cell"] is not None
+    assert ow["best_visible"] is True
+    if not ow["top_scored_is_visible"]:
+        assert ow["best_cell"] != ow["top_scored_cell"]
+
+
+def test_cover_term_gain_and_field_baseline_are_measured() -> None:
+    """Binds the manuscript's honest claim about the cover term.
+
+    Two separate facts, both measured against real baselines:
+    1. the exposure term does move the route toward concealment (positive gain
+       against the same planner with ``cover_weight=0``); and
+    2. the resulting route is nevertheless *below* the grid's own mean
+       concealment — it is a mild preference, not a concealment-optimal path.
+
+    If either relation flips, this test goes red and the prose in
+    ``manuscript/00_abstract.md`` and ``03_results.md`` must be rewritten.
+    """
+    ter = mission_solution()["terrain"]
+    assert float(ter["cover_term_gain"]) > 0.0
+    assert float(ter["mean_cover"]) > float(ter["bare_mean_cover"])
+    assert float(ter["cover_vs_field"]) < 0.0
+    assert float(ter["mean_cover"]) < float(ter["field_mean_cover"])
+    # the gain is small: the blended cost is dominated by traversal and climb
+    assert float(ter["cover_term_gain"]) < 0.05
+    # and a heavy exposure weight *can* clear the field average, which proves
+    # the shortfall above is a weighting choice, not an unreachable ceiling
+    heavy = mission_solution(cover_weight=8.0)["terrain"]
+    assert float(heavy["mean_cover"]) > float(heavy["field_mean_cover"])
+
+
 def test_cover_weight_raises_mean_cover() -> None:
     """A heavier exposure penalty must strictly buy concealment.
 

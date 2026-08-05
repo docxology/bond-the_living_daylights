@@ -78,16 +78,43 @@ def test_plan_route_errors() -> None:
         t.plan_route(grid, (0, 0), (0, 999))
 
 
+def _oracle_cover(grid: t.TerrainGrid, path: tuple[tuple[int, int], ...]) -> dict[str, object]:
+    """Concealment summary computed here, from the raw ``cover_height`` field.
+
+    Deliberately re-derives the documented definition
+    (``clip(cover_height / COVER_THRESHOLD_M, 0, 1)``) in the test, calling
+    neither ``_summarize`` nor ``assess_cover``. This is the oracle both
+    production paths are checked against, so a shared bug in them is visible
+    rather than cancelled out.
+    """
+    values = [
+        min(1.0, max(0.0, float(grid.cover_height[r, c]) / t.COVER_THRESHOLD_M)) for (r, c) in path
+    ]
+    lowest = min(values)
+    return {
+        "mean_cover": sum(values) / len(values),
+        "min_cover": lowest,
+        "min_cover_index": values.index(lowest),
+        "cover_points": tuple(cell for cell, cv in zip(path, values, strict=True) if cv >= 0.6),
+    }
+
+
 def test_assess_cover() -> None:
     grid = t.generate_terrain(seed=7)
     route = t.plan_route(grid, (0, 0), (grid.n - 1, grid.n - 1))
     audit = t.assess_cover(grid, route.path)
     assert "mean_cover" in audit and "cover_points" in audit and "waypoint_cover" in audit
     assert 0.0 <= float(audit["mean_cover"]) <= 1.0
-    # the independent audit must reproduce the planner's own numbers exactly
-    assert float(audit["mean_cover"]) == pytest.approx(route.mean_cover)
-    assert float(audit["min_cover"]) == pytest.approx(route.min_cover)
-    assert audit["cover_points"] == route.cover_points
+    # Both production paths are checked against the test's own oracle, not
+    # against each other — an equality between two callers of one helper would
+    # hold no matter how wrong that helper was.
+    oracle = _oracle_cover(grid, route.path)
+    for computed in (audit["mean_cover"], route.mean_cover):
+        assert float(computed) == pytest.approx(float(oracle["mean_cover"]))  # type: ignore[arg-type]
+    for lowest in (audit["min_cover"], route.min_cover):
+        assert float(lowest) == pytest.approx(float(oracle["min_cover"]))  # type: ignore[arg-type]
+    assert audit["min_cover_index"] == oracle["min_cover_index"] == route.min_cover_index
+    assert audit["cover_points"] == oracle["cover_points"] == route.cover_points
     # and the per-waypoint map must cover every step with the grid's own values
     waypoints = audit["waypoint_cover"]
     assert isinstance(waypoints, dict)
@@ -99,6 +126,23 @@ def test_assess_cover() -> None:
         t.assess_cover(grid, ())
     with pytest.raises(ValueError):
         t.assess_cover(grid, ((0, 999),))
+
+
+def test_assess_cover_grades_a_path_the_planner_never_produced() -> None:
+    """The audit's actual contribution: grading a path Dijkstra did not build.
+
+    A disconnected, hand-picked waypoint list has no ``RouteResult`` to agree
+    with, so this exercise can only be checked against the test's own oracle.
+    """
+    grid = t.generate_terrain(seed=7)
+    hand_path = ((0, 0), (5, 17), (17, 5), (31, 31), (0, 31))
+    audit = t.assess_cover(grid, hand_path)
+    oracle = _oracle_cover(grid, hand_path)
+    assert float(audit["mean_cover"]) == pytest.approx(float(oracle["mean_cover"]))  # type: ignore[arg-type]
+    assert float(audit["min_cover"]) == pytest.approx(float(oracle["min_cover"]))  # type: ignore[arg-type]
+    assert audit["min_cover_index"] == oracle["min_cover_index"]
+    assert audit["cover_points"] == oracle["cover_points"]
+    assert len(audit["waypoint_cover"]) == len(set(hand_path))  # type: ignore[arg-type]
 
 
 def test_cover_array_tracks_cover_height_not_landcover_code() -> None:

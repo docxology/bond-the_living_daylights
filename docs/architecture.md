@@ -87,7 +87,8 @@ row-major scan → visible cells, count, fraction), `elevation_gain`,
 `OverwatchRanking`, `rank_overwatch_positions` (weighted blend of visibility,
 proximity, cover, and elevation advantage, normalized over the candidate set,
 with weights validated to sum to 1), and `best_overwatch` (top-ranked *visible*
-candidate, or `None`).
+candidate, or `None`). A blind candidate keeps up to 0.60 of the score, so
+`ranked[0]` can be blind; `compute_mission` selects through `best_overwatch`.
 
 ### `defection_protocol.py` — the staged plan and its backstop
 
@@ -97,7 +98,10 @@ approval — the first non-`go` stage becomes the plan gate, and a `no-go` block
 everything after it); `koskov_scenario` (the canonical fixed scenario).
 Separately, the verification backstop: `EvidenceCheck`,
 `verification_certainty`, `backstop_verdict`, `koskov_verification`. The two
-halves share no inputs, so their agreement is corroboration, not restatement.
+halves read no shared variable, but both `koskov_scenario` and
+`koskov_verification` are hardcoded constant tables authored here together to
+encode one story beat. Their agreement is a design-consistency check between
+two scoring paths — not corroboration.
 
 ### `terrain_ops.py` — ground and routes
 
@@ -106,8 +110,11 @@ in-table), `generate_terrain` (seeded blurred Gaussian relief + categorical
 landcover + jittered cover height), `landcover_name`, `step_cost` (landcover
 cost + ascent penalty + `cover_weight·(1 − cover)` exposure, scaled by cell
 size), `plan_route` (Dijkstra over 4-adjacent moves with strict tie-breaking),
-`RouteResult`, and `assess_cover` — an **independent** audit that grades any
-proposed path, not only the planner's own.
+`RouteResult`, and `assess_cover` — a **separately implemented** audit
+(vectorised numpy; it deliberately does not call `_summarize`) that grades any
+proposed path, not only the planner's own. Agreement with the planner's summary
+catches implementation drift; it is not independent evidence, since both encode
+one concealment definition.
 
 ### `compute_mission.py` — the single solution
 

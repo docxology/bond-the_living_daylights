@@ -119,6 +119,25 @@ def test_require_outputs_rejects_an_incomplete_solution() -> None:
             generate_variables(solution=gutted, now=FIXED_NOW)
 
 
+def test_require_outputs_false_actually_disables_the_gate() -> None:
+    """The opt-out flag is a real branch, so it is exercised as one.
+
+    With ``require_outputs=False`` a complete solution still hydrates, and an
+    incomplete one is no longer caught by the friendly section check — it
+    fails later on a raw ``KeyError``. That contrast is what proves the flag
+    is consulted rather than ignored.
+    """
+    healthy = generate_variables(require_outputs=False, now=FIXED_NOW)
+    assert healthy == generate_variables(now=FIXED_NOW)
+
+    gutted = dict(mission_solution())
+    gutted["terrain"] = {}
+    with pytest.raises(KeyError):
+        generate_variables(solution=gutted, require_outputs=False, now=FIXED_NOW)
+    with pytest.raises(ValueError, match="missing result sections"):
+        generate_variables(solution=gutted, require_outputs=True, now=FIXED_NOW)
+
+
 def test_injected_solution_flows_into_the_tokens() -> None:
     """A supplied solution is what gets hydrated — not a re-read of the live one."""
     altered = dict(mission_solution())

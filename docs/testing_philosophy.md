@@ -14,8 +14,12 @@ Concretely, "real" means:
   zero and then re-simulates the trajectory to confirm the round actually
   arrives at height ~0 at the zero range.
 * **Terrain is generated, routed, and audited.** The seeded grid is built by
-  numpy, Dijkstra walks it, and the independent `assess_cover` audit is checked
-  to *reproduce the planner's own numbers* — two code paths, one answer.
+  numpy and Dijkstra walks it. The `assess_cover` audit is a second
+  implementation (vectorised numpy against the planner's scalar loop, sharing
+  no helper), but the suite does *not* check the two against each other — an
+  equality between two callers of one definition holds no matter how wrong that
+  definition is. Both are checked against a third calculation performed in the
+  test from the raw `cover_height` field.
 * **Figures are rendered.** `test_figures.py` writes real PNGs under `tmp_path`,
   reads them back, and renders twice to compare bytes.
 * **Scripts are executed**, not imported and called. `test_scripts_smoke.py`
@@ -100,13 +104,13 @@ out to be both impossible to trigger *and* to provide no safety — an
 
 | File | Coverage focus |
 | --- | --- |
-| `tests/test_ballistics.py` | Projectile validation, drag/BC identities, atmospheric density, RK4 trajectory determinism, zero solving with bracket clamping and a full bisection budget, near/far-zero capture including its zero- and one-crossing degenerate cases, interpolation boundaries, free-fall derivative, drop and time of flight with validation, windage and hold, all six ROE branches, cello-case packing with per-part slot binding, lane non-overlap, and width exhaustion |
+| `tests/test_ballistics.py` | Projectile validation, drag/BC identities, atmospheric density, RK4 trajectory determinism, zero solving with bracket clamping and a full bisection budget, near/far-zero capture including its zero- and one-crossing degenerate cases, interpolation boundaries, free-fall derivative, drop, the closed-form time of flight against both the vacuum lower bound and the RK4 trajectory's own time array, windage and hold, all six ROE branches, cello-case packing with per-part slot binding, lane non-overlap, and width exhaustion |
 | `tests/test_optics.py` | `ScopeSpec` validation, MOA↔mrad round trips, per-unit click value, whole-click rounding, mil-dot ranging and its inverse, holdover, parallax sign and its zero at the focus range, field of view, and the zero click schedule |
-| `tests/test_countersniper.py` | Normal-CDF reference values, glint geometry (elevation and azimuth falloff), angular fraction and its saturation cap, contrast, the SNR range gradient, detection-probability monotonicity, sound speed and crack-bang round trip, exact two- and three-observer triangulation fixes, and singular/degenerate rejection |
-| `tests/test_visibility.py` | LOS on flat ground and against a blocking ridge, out-of-bounds errors, full and range-limited viewsheds, elevation gain, overwatch ranking order and the visibility weight's effect, the range filter and weight-sum validation, and `best_overwatch` returning `None` when nothing sees the target |
+| `tests/test_countersniper.py` | Normal-CDF reference values, glint geometry (elevation and azimuth falloff), angular fraction and its saturation cap, contrast, the SNR range gradient, detection-probability monotonicity, sound speed and crack-bang round trip, exact two- and three-observer triangulation fixes, the structural zero of a two-bearing residual, a three-bearing positive control pinned to a hand-derived 20.4124 m residual, and singular/degenerate rejection |
+| `tests/test_visibility.py` | LOS on flat ground and against a blocking ridge, out-of-bounds errors, full and range-limited viewsheds, elevation gain, overwatch ranking order and the visibility weight's effect, the range filter and weight-sum validation, `best_overwatch` returning `None` when nothing sees the target, and the positive control where the top-*scored* candidate is blind so `best_overwatch` picks a different cell |
 | `tests/test_defection_protocol.py` | `RiskFactor` / `StageRiskInput` / `DefectionAssessment` validation, weighted stage scoring, an all-`go` plan, threshold and missing-stage errors, the KOSKOV conditional gate, no-go blocking of follow-on stages, evidence-check validation, weighted certainty, and the backstop verdict bands |
-| `tests/test_terrain_ops.py` | Seeded grid determinism and shape/landcover validation, the landcover table, step-cost adjacency plus the exposure term's exact contribution, Dijkstra route determinism, the strict cover-vs-cost trade-off, the cover audit's agreement with the planner, and cover-height semantics |
-| `tests/test_compute_mission.py` | Solution keys and cross-module values, byte-determinism, hash stability and shape, wind sensitivity, and the strict cover-weight response |
+| `tests/test_terrain_ops.py` | Seeded grid determinism and shape/landcover validation, the landcover table, step-cost adjacency plus the exposure term's exact contribution, Dijkstra route determinism, the strict cover-vs-cost trade-off, the cover audit and the planner both checked against the test's own oracle, the audit grading a hand-picked non-Dijkstra path, and cover-height semantics |
+| `tests/test_compute_mission.py` | Solution keys and cross-module values, byte-determinism, hash stability and shape, wind sensitivity, the strict cover-weight response, the reported overwatch nest being visible, and the cover term measured against both baselines (planner with the term off, and the grid mean) |
 | `tests/test_mission.py` | Runtime-checkable protocol compliance, brief identity and content, recon findings, plan steps, deterministic execution and provenance, the full five-stage flow, and gadget registration both module-level and explicit |
 | `tests/test_manuscript_variables.py` | Config loading and its three malformed-input rejections, token content, determinism under a pinned `now`, the live token cross-reference, strict resolution failure, the `require_outputs` gate under each missing section, solution injection, and the `config.yaml` ↔ `settings.py` mirror |
 | `tests/test_figures.py` | All four plates render to real files, byte-determinism across renders, and default output-directory resolution |

@@ -217,9 +217,10 @@ class MissionProvider:  # noqa: N801 — class name is fixed by the discovery co
                 "the innocent are never a target: hold fire on the cellist",
                 "a trigger-guard shot disables a hostile without a lethal error",
                 "optic glints, crack-bang delays, and crossed bearings localize a hostile sniper",
-                "the overwatch nest is the ranked position that sees the site with cover",
+                "the overwatch nest is the top-scored position that can SEE the site",
                 "deterministic provenance makes every field report auditable",
-                "covered exfil routes beat fast but exposed ones in mountain/desert ops",
+                "a cover term bends the exfil route toward concealment but does not by "
+                "itself beat average ground — check the route against a baseline",
             ),
         )
 

@@ -27,15 +27,27 @@ audited against the code without re-running the film's I/O.
 
 ## Verification gate
 
-The package is verified end-to-end with:
+The package is verified with three separate commands, and it is worth stating
+precisely what each one does and does not enforce:
 
 ```bash
-uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run pytest tests/ --cov=src --cov-fail-under=90   # tests + coverage + no-mock scan
+uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
+uv run mypy src/
 ```
 
-This enforces ≥90% line+**branch** coverage on `src/` with real data and zero
-mocks, alongside `ruff` and `mypy` cleanliness on `src/` and `scripts/`. The
-achieved figures are recorded in
+The pytest command enforces two things: ≥90% line+**branch** coverage of `src/`
+measured over real computation, and — since
+[`tests/test_no_mock_frameworks.py`](../tests/test_no_mock_frameworks.py) — the
+absence of any mocking framework, parsed from the AST of every `.py` file under
+`src/`, `tests/`, and `scripts/`. That second gate carries its own positive
+control: a planted `MagicMock`, aliased import, and `mocker` fixture must all
+be reported, so the scan cannot pass by being blind. An earlier version of this
+section claimed the single pytest command also enforced lint and type
+cleanliness. It does not; `ruff` and `mypy` are the second and third commands
+above and nothing in `tests/` invokes them.
+
+The achieved figures are recorded in
 [`docs/_generated/COUNTS.md`](../docs/_generated/COUNTS.md) rather than quoted
 here, so no prose number can go stale against the gate.
 

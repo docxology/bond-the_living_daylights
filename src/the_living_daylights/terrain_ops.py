@@ -8,9 +8,12 @@ Daylights' Afghan theatre (and the generic mountain/desert corridor).
 * :func:`plan_route` runs Dijkstra's shortest-path algorithm over a movement
   cost model that blends distance, climb, and **exposure** (inverse cover), so
   the requested route trades speed against concealment;
-* :func:`assess_cover` grades a route's cover: mean concealment, cover points
-  (high-concealment waypoints), and the least-covered segment — the operator's
-  vulnerable stretch.
+* :func:`assess_cover` grades *any* proposed path's cover — mean concealment,
+  cover points (high-concealment waypoints), and the least-covered segment (the
+  operator's vulnerable stretch) — through a separate vectorised implementation
+  of the same concealment definition. Agreement with :func:`plan_route`'s own
+  summary is a cross-implementation consistency check, not independent evidence
+  about the terrain.
 
 Deterministic by construction: same seed, grid, and costs yield the same route.
 """
@@ -299,22 +302,38 @@ def _summarize(
 
 
 def assess_cover(grid: TerrainGrid, path: tuple[tuple[int, int], ...]) -> dict[str, object]:
-    """Independent cover audit for a route (waypoints need not be connected).
+    """Second, separately implemented cover audit for any proposed path.
 
-    Returns a mapping with ``mean_cover``, ``cover_points``, ``min_cover``,
-    ``min_cover_index``, and per-waypoint concealment — a check the mission can
-    run against any proposed path, not just Dijkstra's.
+    Grades an arbitrary sequence of waypoints — connected or not, Dijkstra's or
+    a hand-drawn alternative — reporting ``mean_cover``, ``cover_points``,
+    ``min_cover``, ``min_cover_index``, and per-waypoint concealment.
+
+    **What the agreement with** :func:`plan_route` **does and does not show.**
+    This function deliberately does *not* call :func:`_summarize`: it is a
+    vectorised numpy path over the same concealment definition, where the
+    planner's summary is a scalar Python loop. Agreement between the two
+    therefore rules out *implementation* drift between the planner's
+    self-reported summary and an audit of the same waypoints. It is **not**
+    independent evidence about the terrain or the model — both implement one
+    definition of concealment, written by one author, so a wrong definition
+    would be reproduced identically by both.
     """
     if not path:
         raise ValueError("assess_cover requires a non-empty path")
     for node in path:
         if not grid.in_bounds(*node):
             raise ValueError(f"cover waypoint {node!r} out of bounds")
-    res = _summarize(grid, path, 0.0)
+    cover = grid.cover_array()
+    rows = np.array([r for (r, _c) in path], dtype=np.int64)
+    cols = np.array([c for (_r, c) in path], dtype=np.int64)
+    values = cover[rows, cols]
+    min_index = int(np.argmin(values))
     return {
-        "mean_cover": res.mean_cover,
-        "cover_points": res.cover_points,
-        "min_cover": res.min_cover,
-        "min_cover_index": res.min_cover_index,
-        "waypoint_cover": {f"{r},{c}": float(grid.cover_array()[r, c]) for (r, c) in path},
+        "mean_cover": float(np.mean(values)),
+        "cover_points": tuple(
+            node for node, keep in zip(path, values >= 0.6, strict=True) if bool(keep)
+        ),
+        "min_cover": float(values[min_index]),
+        "min_cover_index": min_index,
+        "waypoint_cover": {f"{r},{c}": float(cover[r, c]) for (r, c) in path},
     }

@@ -20,23 +20,32 @@ domain modules:
 * **Countersniper detection** — a hostile sniper is ranged acoustically
   ({{CS_CRACK_BANG_M}} m from the {{CRACK_BANG_DELAY_S}} s crack-bang delay at
   {{AIR_TEMP_C}} °C) and localized by {{CS_NUM_OBSERVERS}} crossed bearings to
-  ({{CS_TRI_X_M}}, {{CS_TRI_Y_M}}) m at a {{CS_TRI_RESIDUAL_M}} m residual.
+  ({{CS_TRI_X_M}}, {{CS_TRI_Y_M}}) m. With two bearings the fit is exactly
+  determined, so its residual is zero by construction and no accuracy is
+  claimed from it.
 * **Defection-handling protocol** — a staged, risk-scored pipeline
   ({{DEF_NUM_STAGES}} stages) whose weighted hazard model renders the canonical
   KOSKOV scenario {{DEF_PLAN_VERDICT}} with a {{DEF_GATE}} gate stage and
   {{VER_CERTAINTY}} backstop certainty ({{VER_VERDICT}}).
 * **Mountain/desert terrain ops** — a seeded ({{TER_SEED}}) terrain grid on
-  which a cover-weighted least-cost Dijkstra planner finds covered exfil routes
-  ({{TER_DIST_KM}} km over {{TER_STEPS}} steps, mean concealment
-  {{TER_MEAN_COVER}}, corroborated at {{TER_AUDIT_MEAN_COVER}} by an
-  independent cover audit).
+  which a cover-weighted least-cost Dijkstra planner routes {{TER_DIST_KM}} km
+  over {{TER_STEPS}} steps. Measured against baselines, the exposure term
+  raises route concealment by {{TER_COVER_TERM_GAIN}} over the same planner
+  with the term off, but the resulting {{TER_MEAN_COVER}} still falls short of
+  the grid's own {{TER_FIELD_MEAN_COVER}} mean (signed gap
+  {{TER_COVER_VS_FIELD}}): at this weighting concealment is a preference, not
+  the objective, and the route is not a concealed one.
 * **Overwatch selection** — of {{OW_NUM_CANDIDATES}} in-range candidate
-  positions only {{OW_VISIBLE_CANDIDATES}} see the extraction site; the ranked
-  best nest at {{OW_BEST_CELL}} commands it from {{OW_BEST_DISTANCE_M}} m with
-  {{OW_BEST_ELEV_GAIN_M}} m elevation advantage.
+  positions only {{OW_VISIBLE_CANDIDATES}} see the extraction site; the
+  top-scored *visible* nest at {{OW_BEST_CELL}} commands it from
+  {{OW_BEST_DISTANCE_M}} m with {{OW_BEST_ELEV_GAIN_M}} m elevation advantage.
 
-Two independent models — the staged plan's {{DEF_GATE}} gate and the backstop
-certainty — agree on a conditional posture without sharing inputs.
+The staged plan's {{DEF_GATE}} gate and the backstop certainty agree on a
+conditional posture. They read no shared variable, but both scenarios are
+constant tables authored in one module to encode the same story beat, so the
+agreement is a design-consistency check between two scoring paths — not
+independent corroboration. The same caution applies to the terrain cover audit,
+which is a second implementation of one concealment definition.
 
 All results derive from a single deterministic mission solution
 ([`src/the_living_daylights/compute_mission.py`](../src/the_living_daylights/compute_mission.py))

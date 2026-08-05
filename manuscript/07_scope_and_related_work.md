@@ -19,7 +19,11 @@ Stated as explicit non-claims:
   cone) geometry, no multipath or reverberation, and no wind-borne refraction.
 * **Localization** is a noiseless least-squares bearing intersection. Bearings
   carry no uncertainty model, so the reported residual measures geometric
-  consistency of the observations, not positional accuracy.
+  consistency of the observations, not positional accuracy. At the mission's
+  two observers it does not even measure that: two non-parallel bearings give
+  an exactly determined system whose residual is identically zero, so the value
+  printed in the results is rounding noise and carries no information at all.
+  A residual becomes informative only with three or more inconsistent bearings.
 * **Terrain** is a seeded grid of elevation, landcover, and standing cover.
   Routing is 4-adjacent Dijkstra on a blended cost; visibility is a single-ray
   Bresenham walk with a fixed clearance and no earth curvature, refraction, or
@@ -56,12 +60,16 @@ byte-identical reruns rather than statistical agreement.
 * **Risk-gated decision procedures** — the discrete, thresholded approval path
   of `defection_protocol.py` is a classic monotone decision chain; its weighted
   hazard scoring follows a transparent exposure-weighting scheme. The
-  contribution is pairing a staged plan gate with an *independent*
-  evidence-verification model that shares none of its inputs.
+  contribution is pairing a staged plan gate with a separately parameterised
+  evidence-verification model. Both scenarios are authored constant tables, so
+  the pairing is a structural one; agreement between them is not independent
+  evidence and is not offered as such.
 * **Terrain routing** — Dijkstra's algorithm over a cost grid [@dijkstra1959]
   is the canonical least-cost routing method; the contribution here is the
-  *cover* term that folds concealment into route cost, plus an independent
-  cover audit that can grade any proposed path, not only the planner's own.
+  *cover* term that folds concealment into route cost — reported against two
+  measured baselines (the same planner with the term off, and the grid's own
+  mean concealment) rather than asserted — plus a cover audit that can grade
+  any proposed path, not only the planner's own.
 
 ## Intended use
 

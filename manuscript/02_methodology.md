@@ -27,6 +27,18 @@ same point. Bisection on the simulated impact height yields an elevation of
 the trajectory crosses the sight line: near {{BAL_NEAR_ZERO}} m and far
 {{BAL_FAR_ZERO}} m.
 
+**Time of flight.** `ballistics.time_of_flight` is a *closed form*, not a
+readout of the RK4 trajectory above. Flat-fire quadratic drag `dv/dt = −k·v²`
+integrates to `x(t) = ln(1 + k·v₀·t)/k`, and inverting that gives
+`t(x) = (exp(k·x) − 1)/(k·v₀)`, which is the expression the code evaluates.
+Because `exp(z) − 1 ≥ z`, the result is always at or above the drag-free bound
+`range/v₀` — a decelerating round cannot beat vacuum, and the test suite pins
+that floor at five ranges. The form neglects the extra path length contributed
+by the launch angle and gravity, so it is a strict lower bound on the
+integrated flight time; at the {{BAL_TARGET_RANGE}} m target it returns
+{{BAL_TOF}} s against the RK4 trajectory's own time array, the two agreeing to
+under a millisecond. That comparison is itself a test, not a claim.
+
 **Windage.** Crosswind is treated as a drag-driven lateral relaxation toward
 the wind speed. `ballistics.wind_drift` integrates the lateral offset; at the
 {{BAL_TARGET_RANGE}} m target a {{BAL_WIND_MPS}} m/s full-value wind produces a
@@ -104,9 +116,18 @@ A hostile sniper is found three ways, all deterministic:
   solving the resulting 2x2 normal equations in closed form and rejecting a
   singular (parallel or collinear) system rather than returning a fictitious
   fix. From {{CS_NUM_OBSERVERS}} observers the crossed bearings place the
-  hostile at ({{CS_TRI_X_M}}, {{CS_TRI_Y_M}}) m with an RMS perpendicular
-  residual of {{CS_TRI_RESIDUAL_M}} m (acoustic shooter localization per
-  [@duckworth1996counter], [@ledeczi2005countersniper]).
+  hostile at ({{CS_TRI_X_M}}, {{CS_TRI_Y_M}}) m (acoustic shooter localization
+  per [@duckworth1996counter], [@ledeczi2005countersniper]). **The reported
+  residual is not a measurement.** With {{CS_NUM_OBSERVERS}} bearings the
+  normal equations are two equations in two unknowns, so the fit passes exactly
+  through the intersection and the residual is identically zero for any
+  non-parallel pair; the {{CS_TRI_RESIDUAL_M}} m printed in the results is
+  floating-point rounding, not accuracy. The residual only carries information
+  when the system is over-determined and inconsistent, which requires at least
+  three bearings and a noise model this package does not have. A three-bearing
+  positive control in `tests/test_countersniper.py` pins a hand-derived
+  20.4124 m residual, so the code path is exercised where it can actually be
+  wrong.
 
 ## Terrain visibility (`visibility.py`)
 
@@ -127,7 +148,13 @@ engagement range, and distance and elevation gain are normalized over the
 surviving set. Positions that cannot see the target keep their other terms but
 score zero for visibility, so the ranking stays total and deterministic (ties
 break on cell order). `best_overwatch` returns the top-ranked *visible*
-candidate, or `None` when nothing sees the site.
+candidate, or `None` when nothing sees the site. Because a blind candidate
+keeps its proximity, cover, and elevation terms (up to 0.60 of the score), it
+can out-rank a visible one that scores only the 0.40 visibility weight;
+`rank_overwatch_positions[0]` therefore carries no visibility guarantee, and
+`compute_mission` selects the reported nest through `best_overwatch` rather
+than off the top of the ranking. `tests/test_visibility.py` builds the case
+where the two disagree, so the filter is exercised rather than assumed.
 
 ## Defection-handling protocol (`defection_protocol.py`)
 
@@ -155,10 +182,19 @@ The verify stage's backstop model (`EvidenceCheck`, `verification_certainty`,
 ({{VER_CHECK_LABELS}}) into a certainty score under the same exposure-weighting
 scheme as `stage_score`, then maps that certainty onto a
 cleared/conditional/rejected verdict — the operational analogue of sequential
-verification against documentary and telegraphic backstops. It is an
-*independent* corroboration of the staged assessment: the two models share no
-inputs, so agreement between the plan gate and the backstop verdict is
-evidence, not tautology.
+verification against documentary and telegraphic backstops.
+
+**This is not independent corroboration, and earlier drafts of this section
+wrongly said it was.** `koskov_scenario` and `koskov_verification` are two
+hardcoded constant tables in the same module, written by the same author to
+encode the same story beat — the film's verification doubt. They read no shared
+variable, but that is a weaker fact than it sounds: the numbers in both tables
+were chosen so that the verify stage gates and the backstop lands
+`conditional`, and `koskov_verification`'s own docstring says so. Their
+agreement demonstrates that two scoring functions applied to two consistent
+authored inputs return consistent verdicts. It is a design-consistency check
+between the staged and backstop paths, and it is evidence about neither
+General Koskov nor the world.
 
 ## Terrain ops (`terrain_ops.py`)
 
@@ -175,9 +211,20 @@ to the climb per cell, and an exposure penalty `cover_weight·(1 − cover)`, th
 scales by the cell size. `plan_route` runs Dijkstra's algorithm
 [@dijkstra1959] over 4-adjacent moves with strict `(cost, row, col)`
 tie-breaking, which is what makes the route byte-reproducible. `assess_cover`
-is an *independent* audit that grades any proposed path — not only Dijkstra's —
-reporting mean and minimum concealment, the least-covered step, the
-high-concealment waypoints, and per-waypoint cover.
+grades any proposed path — not only Dijkstra's — reporting mean and minimum
+concealment, the least-covered step, the high-concealment waypoints, and
+per-waypoint cover.
+
+**What the audit's agreement with the planner establishes.** `assess_cover` is
+a vectorised numpy implementation and `plan_route`'s summary is a scalar Python
+loop; the two deliberately share no helper. Agreement between them therefore
+rules out implementation drift between what the planner reports about its own
+route and what an audit of the same waypoints computes. It does **not**
+corroborate the concealment model: both encode one definition
+(`clip(cover_height / COVER_THRESHOLD_M, 0, 1)`) written by one author, so a
+wrong definition would be reproduced identically by both. The test suite
+therefore checks each against a third calculation performed in the test itself,
+rather than checking them against each other.
 
 ## Composition (`compute_mission.py`)
 

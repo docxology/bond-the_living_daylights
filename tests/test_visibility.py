@@ -102,6 +102,37 @@ def test_rank_overwatch_range_filter_and_errors() -> None:
         v.rank_overwatch_positions(grid, target, [(9, 9)])
 
 
+def test_best_overwatch_skips_a_blind_top_scorer() -> None:
+    """The visibility filter is load-bearing, not decorative.
+
+    A close, high, well-covered position can out-score a distant open one on
+    the non-visibility terms alone (max 0.60) even though a ridge blinds it,
+    beating a visible candidate that scores only the 0.40 visibility weight.
+    ``rank_overwatch_positions`` therefore puts the blind cell first, and only
+    ``best_overwatch`` returns a position that can actually see the site.
+    """
+    n = 9
+    elev = np.zeros((n, n))
+    elev[7, :] = 300.0  # ridge wall between the blind candidate and the site
+    elev[6, 4] = 200.0  # blind candidate: high ground behind the wall
+    cov = np.zeros((n, n))
+    cov[6, 4] = terrain_ops.COVER_THRESHOLD_M  # ...and fully concealed
+    lc = np.full((n, n), terrain_ops.open_desert)
+    grid = terrain_ops.TerrainGrid(elev, lc, cov, 500.0, seed=3)
+
+    target = (8, 4)
+    blind, seeing = (6, 4), (8, 0)
+    ranked = v.rank_overwatch_positions(grid, target, [blind, seeing], max_range_cells=6)
+    by_cell = {r.cell: r for r in ranked}
+    assert by_cell[blind].visible is False
+    assert by_cell[seeing].visible is True
+    assert ranked[0].cell == blind  # top-SCORED cannot see the site
+    best = v.best_overwatch(grid, target, [blind, seeing], max_range_cells=6)
+    assert best is not None
+    assert best.cell == seeing and best.visible  # top-scored VISIBLE differs
+    assert best.cell != ranked[0].cell
+
+
 def test_best_overwatch_visible_and_none() -> None:
     flat = _flat_grid()
     best = v.best_overwatch(flat, (2, 2), [(0, 0), (4, 4)])

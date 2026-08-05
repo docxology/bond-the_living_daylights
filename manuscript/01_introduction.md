@@ -33,12 +33,14 @@ RNG:
   overwatch (sniper's nest) selection the title's image demands.
 * [**`defection_protocol.py`**](../src/the_living_daylights/defection_protocol.py) —
   a staged, risk-scored defection-handling pipeline with monotonic approval and
-  a plan gate, plus the backstop evidence-verification model that corroborates
-  that gate.
+  a plan gate, plus a separately parameterised backstop evidence-verification
+  model that agrees with that gate — both are authored constant tables, so the
+  agreement is a design check rather than independent corroboration.
 * [**`terrain_ops.py`**](../src/the_living_daylights/terrain_ops.py) —
   a seeded mountain/desert grid (elevation, landcover, standing cover),
-  cover-weighted Dijkstra route planning, and an independent cover audit that
-  grades any proposed path, not only the planner's own.
+  cover-weighted Dijkstra route planning reported against measured baselines,
+  and a separately implemented cover audit that grades any proposed path, not
+  only the planner's own.
 * [**`settings.py`**](../src/the_living_daylights/settings.py) — the single
   authoritative source of mission parameters, echoed for readers in
   [`manuscript/config.yaml`](config.yaml).

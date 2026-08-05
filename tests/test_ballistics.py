@@ -96,6 +96,52 @@ def test_drop_and_time_of_flight() -> None:
         b.time_of_flight(-5.0, V0)
 
 
+def test_time_of_flight_cannot_beat_vacuum() -> None:
+    """A decelerating round is never faster than the drag-free bound R/v0.
+
+    This is the physical floor the closed form must respect at every range.
+    An algebraically inverted formula (one that *shortens* the flight) fails
+    here immediately: the shipped value at 300 m is 0.41751 s against a
+    0.37975 s vacuum bound, and an inverted form returns 0.34817 s.
+    """
+    for range_m in (50.0, 100.0, 300.0, 600.0, 900.0):
+        tof = b.time_of_flight(range_m, V0, projectile=PROJ)
+        vacuum = range_m / V0
+        assert tof > vacuum, f"{range_m} m: {tof} s beats vacuum {vacuum} s"
+        # and drag must actually cost time, growing with range
+        assert (tof - vacuum) / vacuum > 1e-3
+
+
+def test_time_of_flight_matches_the_rk4_trajectory() -> None:
+    """The closed form is cross-checked against the integrator's own clock.
+
+    ``trajectory`` carries a time array; interpolating it at the target range
+    gives an independently computed flight time. The closed form neglects the
+    launch-angle path length, so it may sit a hair below the integrated value,
+    but the two must agree to a millisecond at mission ranges.
+    """
+    for range_m in (100.0, 200.0, 300.0):
+        xs, _ys, _zs, ts = b.trajectory(
+            V0, 0.0, projectile=PROJ, max_range=range_m + 10.0, max_time=4.0
+        )
+        # the flat-fire round must actually get there, or the sample is a stub
+        assert xs[-1] >= range_m, f"trajectory stopped short of {range_m} m"
+        integrated = b._sample_at(xs, ts, range_m)
+        closed = b.time_of_flight(range_m, V0, projectile=PROJ)
+        assert closed == pytest.approx(integrated, abs=1e-3)
+        assert closed <= integrated + 1e-9  # the closed form is the lower bound
+
+
+def test_time_of_flight_is_monotone_and_scales_with_drag() -> None:
+    """More drag means more flight time; longer range means more flight time."""
+    times = [b.time_of_flight(r, V0, projectile=PROJ) for r in (100.0, 200.0, 400.0, 800.0)]
+    assert times == sorted(times)
+    draggy = b.Projectile(mass_kg=PROJ.mass_kg, caliber_m=PROJ.caliber_m, drag_coefficient=0.44)
+    assert b.time_of_flight(300.0, V0, projectile=draggy) > b.time_of_flight(
+        300.0, V0, projectile=PROJ
+    )
+
+
 def test_wind_drift_and_hold() -> None:
     assert b.wind_drift(300.0, 0.0, V0, projectile=PROJ) == 0.0
     drift = b.wind_drift(300.0, 5.0, V0, projectile=PROJ)

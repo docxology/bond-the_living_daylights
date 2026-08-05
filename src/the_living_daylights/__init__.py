@@ -13,7 +13,7 @@ Pure-domain core (infrastructure-free) for The Living Daylights (1987):
 * :mod:`defection_protocol` — staged, risk-scored defection handling plus the
   backstop evidence-verification model;
 * :mod:`terrain_ops` — seeded mountain/desert grid, cover-weighted Dijkstra
-  routing, and the independent cover audit;
+  routing, and the separately implemented cover audit;
 * :mod:`settings` — the single source of mission parameters;
 * :mod:`compute_mission` — the one deterministic mission solution every
   consumer reads.

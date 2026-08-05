@@ -34,11 +34,15 @@ orchestrator by slug on `sys.path`.
   and ranked overwatch (sniper's nest) selection.
 * **Defection handling** — a staged (contact → relocate), risk-scored protocol
   with weighted hazards, monotonic approval, and a plan gate.
-* **Evidence verification** — an independent backstop model (weighted checks →
-  certainty → cleared/conditional/rejected) that corroborates the plan gate
-  without sharing its inputs.
+* **Evidence verification** — a backstop model (weighted checks → certainty →
+  cleared/conditional/rejected) that agrees with the plan gate. Both scenarios
+  are hardcoded tables in one module: no shared variable, but no independence
+  either. Treat the agreement as a design-consistency check.
 * **Terrain ops** — seeded mountain/desert grid, cover-weighted Dijkstra
-  routing, and an independent cover audit for any proposed path.
+  routing, and a separately implemented cover audit for any proposed path.
+  The audit shares no helper with the planner's summary, so agreement catches
+  implementation drift; both encode one concealment definition, so it does not
+  corroborate the model.
 
 Everything above is composed by `compute_mission.mission_solution()`, the single
 place any number is computed.

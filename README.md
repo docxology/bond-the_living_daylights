@@ -17,8 +17,8 @@ Every module below implements something the film actually turns on:
 | Bond covering a defection from an overwatch position | Terrain line of sight, viewsheds, and a *ranked* overwatch selection for the extraction site |
 | Bond deliberately shooting the rifle out of the cellist's hands instead of killing her | A rules-of-engagement precedence chain that resolves to a trigger-guard weapon-disable rather than a lethal shot |
 | A hostile sniper working the same corridor | Optic-glint radiometry, acoustic crack-bang ranging, and least-squares bearing triangulation |
-| Koskov's defection, and the doubt about it | A staged, risk-scored handling protocol with a plan gate, plus an independent backstop evidence-verification model |
-| Exfiltration across Afghan mountain and desert | A seeded terrain grid and cover-weighted least-cost routing, with an independent cover audit |
+| Koskov's defection, and the doubt about it | A staged, risk-scored handling protocol with a plan gate, plus a separately parameterised backstop evidence-verification model (both are authored constant tables — their agreement is a design check, not independent evidence) |
+| Exfiltration across Afghan mountain and desert | A seeded terrain grid and cover-weighted least-cost routing, reported against measured baselines (the route sits *below* the grid's mean concealment), with a second-implementation cover audit |
 
 ## Modules
 
@@ -31,7 +31,7 @@ Pure domain core — stdlib + numpy only, no `bond_api`, no I/O, no wall-clock:
 | [`src/the_living_daylights/countersniper.py`](src/the_living_daylights/countersniper.py) | Countersniper detection: optic-glint geometry, sky contrast, angular fraction and SNR, detection probability; temperature-dependent sound speed and crack-bang ranging; least-squares bearing triangulation with a residual. |
 | [`src/the_living_daylights/visibility.py`](src/the_living_daylights/visibility.py) | Bresenham line of sight with a clearance, viewsheds, and weighted overwatch (sniper's nest) ranking over candidate positions. |
 | [`src/the_living_daylights/defection_protocol.py`](src/the_living_daylights/defection_protocol.py) | Staged, risk-scored defection handling with monotonic approval and a plan gate, plus the backstop evidence-verification model (`EvidenceCheck`, certainty, verdict). |
-| [`src/the_living_daylights/terrain_ops.py`](src/the_living_daylights/terrain_ops.py) | Seeded mountain/desert grid (elevation, landcover, standing cover), cover-weighted Dijkstra routing, and an independent cover audit for any proposed path. |
+| [`src/the_living_daylights/terrain_ops.py`](src/the_living_daylights/terrain_ops.py) | Seeded mountain/desert grid (elevation, landcover, standing cover), cover-weighted Dijkstra routing, and a separately implemented cover audit for any proposed path (vectorised numpy vs the planner's scalar loop — a cross-implementation check, not independent evidence). |
 | [`src/the_living_daylights/settings.py`](src/the_living_daylights/settings.py) | Every fixed mission parameter — the single source of truth. |
 | [`src/the_living_daylights/compute_mission.py`](src/the_living_daylights/compute_mission.py) | The one deterministic mission solution, plus its SHA-256 provenance `input_hash`. |
 

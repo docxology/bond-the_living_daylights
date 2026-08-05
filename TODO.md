@@ -15,7 +15,7 @@ remaining work; nothing here is aspirational.
 | `countersniper.py` | Glint geometry / contrast / angular fraction / SNR / detection CDF, sound speed, crack-bang delay + range, least-squares bearing triangulation with residual | `tests/test_countersniper.py` |
 | `visibility.py` | Bresenham line of sight with clearance and first blocker, viewsheds, weighted overwatch ranking, `best_overwatch` | `tests/test_visibility.py` |
 | `defection_protocol.py` | Staged weighted risk scoring, monotonic approval + plan gate, KOSKOV scenario; backstop `EvidenceCheck` / certainty / verdict | `tests/test_defection_protocol.py` |
-| `terrain_ops.py` | Seeded elevation/landcover/cover grid, blended step cost, Dijkstra routing, independent cover audit | `tests/test_terrain_ops.py` |
+| `terrain_ops.py` | Seeded elevation/landcover/cover grid, blended step cost, Dijkstra routing, separately implemented cover audit | `tests/test_terrain_ops.py` |
 | `settings.py` | Every fixed mission parameter (single source of truth) | exercised throughout |
 | `compute_mission.py` | The one deterministic mission solution + SHA-256 `input_hash` | `tests/test_compute_mission.py` |
 | `mission.py` | Frozen BOND-API `MissionProvider` (brief/recon/plan/execute/debrief) + module-level `GADGETS` | `tests/test_mission.py` |
@@ -74,11 +74,15 @@ git repo, path-scoped commits.
   Acceptance: a recorded outcome whose provenance block equals `execute()`'s
   `Provenance` field for field.
 - **Unreachable-by-construction guards.** `plan_route`'s "goal is unreachable"
-  raise cannot fire on a fully connected 4-adjacent grid, and `_sample_at`'s
-  zero-width-span branch cannot fire on a monotone trajectory. Both are kept as
-  defensive guards for future callers, and both are why `src/` coverage is not
-  100%. If the terrain model ever grows impassable cells, the first becomes
-  live and needs a test.
+  raise cannot fire on a fully connected 4-adjacent grid, `_sample_at`'s
+  zero-width-span branch cannot fire on a monotone trajectory, and
+  `capture_zero`'s exact-zero crossing needs a float sample landing precisely
+  on the sight line. All are kept as defensive guards for future callers, and
+  all are why `src/` coverage is not 100%. If the terrain model ever grows
+  impassable cells, the first becomes live and needs a test. The authoritative,
+  exhaustive list of uncovered lines and partial branches lives in
+  [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md) — do not maintain a
+  second enumeration here.
 - **`plots.py` `best is None` branch** is uncovered: no seed currently produces
   a target that no candidate can see. Covering it needs a fixture grid rather
   than the mission's own, which would mean parameterizing the figure functions.

@@ -21,5 +21,32 @@ claims:
     kind: computed
   - key: route_mean_cover
     source: compute_mission.mission_solution()["terrain"]["mean_cover"]
-    description: "Mean concealment of the planned exfil route."
+    description: >-
+      Mean concealment of the planned exfil route. Read alongside
+      field_mean_cover and bare_mean_cover: the route is BELOW the grid's mean
+      concealment, so this number must never be quoted as evidence of a
+      "covered" route.
     kind: computed
+  - key: route_cover_baselines
+    source: compute_mission.mission_solution()["terrain"]
+    description: >-
+      field_mean_cover (grid mean), bare_mean_cover (same planner with the
+      exposure term off), cover_term_gain, and cover_vs_field — the baselines
+      that make the cover term a measured effect rather than an adjective.
+      Bound by test_cover_term_gain_and_field_baseline_are_measured.
+    kind: computed
+  - key: time_of_flight_s
+    source: compute_mission.mission_solution()["ballistics"]["time_of_flight_s"]
+    description: >-
+      Closed-form flat-fire time of flight, (exp(k*R)-1)/(k*v0). Bound below by
+      the vacuum time R/v0 and cross-checked against the RK4 trajectory's own
+      time array in tests/test_ballistics.py.
+    kind: computed
+  - key: triangulation_residual_m
+    source: compute_mission.mission_solution()["countersniper"]["triangulation_residual_m"]
+    description: >-
+      NOT A MEASUREMENT. With the mission's two observers the least-squares
+      system is exactly determined, so this residual is identically zero by
+      construction and the reported value is float rounding. Never cite it as
+      localization accuracy.
+    kind: structural-zero
