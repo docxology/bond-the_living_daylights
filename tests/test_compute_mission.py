@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from the_living_daylights import settings, terrain_ops, visibility
 from the_living_daylights.compute_mission import input_hash, mission_solution
 
 
@@ -57,13 +58,49 @@ def test_reported_overwatch_nest_can_see_the_site() -> None:
 
     ``rank_overwatch_positions`` scores blind candidates too (they keep the
     proximity, cover, and elevation terms), so ``ranked[0]`` carries no
-    visibility guarantee. The solution must go through the visible filter.
+    visibility guarantee. The solution goes through ``best_overwatch``.
+
+    **This test is currently weaker than it looks, and that is stated rather
+    than hidden.** On the shipped seed the 0.40 visibility weight dominates and
+    the top-scored candidate happens to *be* the visible one at every candidate
+    step from 1 to 8, so reverting ``compute_mission`` to ``ranked[0]`` would
+    not turn this red — the code fix removes a latent defect without moving any
+    reported number. The falsifiable proof that the two selections can differ
+    lives in ``test_visibility.test_best_overwatch_skips_a_blind_top_scorer``,
+    which constructs the disagreeing grid directly. What this test does bind is
+    the invariant (the reported nest sees the site) and the policy identity
+    below, both of which fire if the terrain, seed, or weights ever change.
     """
-    ow = mission_solution()["overwatch"]
+    sol = mission_solution()
+    ow = sol["overwatch"]
     assert ow["best_cell"] is not None
     assert ow["best_visible"] is True
     if not ow["top_scored_is_visible"]:
         assert ow["best_cell"] != ow["top_scored_cell"]
+
+    # policy identity: the reported nest is the first VISIBLE cell in ranking
+    # order, recomputed here rather than read back from the solution.
+    grid = terrain_ops.generate_terrain(
+        settings.TERRAIN_N, settings.TERRAIN_SEED, settings.TERRAIN_CELL_SIZE_M
+    )
+    target = tuple(int(v) for v in ow["target_cell"])
+    candidates = tuple(
+        (r, c)
+        for r in range(0, grid.n, settings.OVERWATCH_CANDIDATE_STEP)
+        for c in range(0, grid.n, settings.OVERWATCH_CANDIDATE_STEP)
+        if (r, c) != target
+    )
+    expected = visibility.best_overwatch(
+        grid,
+        target,  # type: ignore[arg-type]
+        candidates,
+        eye_height_m=settings.OVERWATCH_EYE_HEIGHT_M,
+        clearance_m=settings.OVERWATCH_CLEARANCE_M,
+        max_range_cells=settings.OVERWATCH_MAX_RANGE_CELLS,
+    )
+    assert expected is not None
+    assert ow["best_cell"] == expected.cell
+    assert float(ow["best_score"]) == pytest.approx(expected.score)
 
 
 def test_cover_term_gain_and_field_baseline_are_measured() -> None:

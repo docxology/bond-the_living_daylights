@@ -154,7 +154,12 @@ can out-rank a visible one that scores only the 0.40 visibility weight;
 `rank_overwatch_positions[0]` therefore carries no visibility guarantee, and
 `compute_mission` selects the reported nest through `best_overwatch` rather
 than off the top of the ranking. `tests/test_visibility.py` builds the case
-where the two disagree, so the filter is exercised rather than assumed.
+where the two disagree, so the filter is exercised rather than assumed. On the
+mission's own seed the two happen to coincide at every candidate step tested
+(1–8): the 0.40 visibility weight dominates this terrain, so no reported number
+changes. The selection is stated here because it is the correct policy and
+because an earlier version took `ranked[0]`, which carried no such guarantee —
+not because it moved a result.
 
 ## Defection-handling protocol (`defection_protocol.py`)
 
