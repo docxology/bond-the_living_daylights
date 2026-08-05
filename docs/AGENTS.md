@@ -27,8 +27,12 @@ item below is a hard constraint, not a suggestion.
 - **Zero mocks.** No `unittest.mock` / `MagicMock` / `@patch` /
   `create_autospec` anywhere in `tests/`.
 - **Determinism.** Fixed seeds, no global RNG, no wall-clock in persisted
-  artifacts (the manuscript regeneration timestamp is the one exception, and it
-  is injectable).
+  artifacts — no exception. `MANUSCRIPT_DATE` is the committed `paper.date`
+  from `manuscript/config.yaml`. Two runs of
+  `scripts/z_generate_manuscript_variables.py` on one interpreter produce a
+  byte-identical `output/` tree, and
+  `tests/test_regeneration_determinism.py` proves it by running the script
+  twice across a second boundary.
 - **No hardcoded metrics in prose.** Numbers reach the manuscript only as
   tokens from `manuscript_variables.generate_variables()`. Test counts and
   coverage percentages live in `_generated/COUNTS.md` and are quoted nowhere

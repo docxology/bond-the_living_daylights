@@ -74,4 +74,6 @@ live in [`docs/_generated/COUNTS.md`](../docs/_generated/COUNTS.md), and the
 gate itself (`--cov-fail-under=90` on `src/`, line *and* branch) is what this
 manuscript claims.
 
-Manuscript hydrated at {{GENERATION_TIMESTAMP}}.
+Manuscript dated {{MANUSCRIPT_DATE}} — the committed date from
+`manuscript/config.yaml`, not a hydration timestamp, so re-running the
+generator changes no byte of this page.

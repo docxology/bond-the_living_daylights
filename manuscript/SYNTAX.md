@@ -53,7 +53,7 @@ fails the section. Describe them in words instead.
 | `CELL_` | `cello_case` | `CELL_LANES`, `CELL_PACKED_LENGTH_M`, `CELL_CASE_L_M` |
 | `DEF_` | `defection` | `DEF_PLAN_VERDICT`, `DEF_GATE`, `DEF_STAGE_NAMES` |
 | `TER_` | `terrain` | `TER_DIST_KM`, `TER_MEAN_COVER`, `TER_AUDIT_MEAN_COVER` |
-| (identity / env) | `config.yaml`, `settings.py`, platform | `TITLE`, `CODENAME`, `VERSION`, `CONFIG_KEYWORDS`, `PYTHON_VERSION`, `GENERATION_TIMESTAMP` |
+| (identity / env) | `config.yaml`, `settings.py`, platform | `TITLE`, `CODENAME`, `VERSION`, `CONFIG_KEYWORDS`, `PYTHON_VERSION`, `MANUSCRIPT_DATE` |
 
 The authoritative list is the `variables` dict in `manuscript_variables.py`; the
 hydrated snapshot is `output/data/manuscript_variables.json`.

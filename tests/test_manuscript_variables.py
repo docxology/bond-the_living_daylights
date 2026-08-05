@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import re
 import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+import yaml
 
 from the_living_daylights.compute_mission import mission_solution
 from the_living_daylights.manuscript_variables import (
@@ -17,8 +17,6 @@ from the_living_daylights.manuscript_variables import (
     load_manuscript_config,
     resolve_manuscript_tree,
 )
-
-FIXED_NOW = datetime(2026, 8, 4, 12, 0, 0, tzinfo=timezone.utc)
 
 
 def test_load_config_round_trip() -> None:
@@ -32,7 +30,7 @@ def test_load_config_missing() -> None:
 
 
 def test_generate_variables_content() -> None:
-    variables = generate_variables(now=FIXED_NOW)
+    variables = generate_variables()
     assert variables["IDENTITY"] == "the_living_daylights"
     assert variables["CODENAME"] == "SNIPER'S NEST"
     assert variables["BAL_ZERO_RANGE"] == "300"
@@ -43,13 +41,33 @@ def test_generate_variables_content() -> None:
     assert variables["OW_BEST_CELL"]
     assert variables["VER_VERDICT"] == "conditional"
     assert all(isinstance(k, str) and isinstance(v, str) for k, v in variables.items())
-    assert variables["GENERATION_TIMESTAMP"] == "2026-08-04T12:00:00+00:00"
+    # MANUSCRIPT_DATE is the committed paper.date, never a hydration clock.
+    assert variables["MANUSCRIPT_DATE"] == str(
+        load_manuscript_config(DEFAULT_CONFIG_PATH)["paper"]["date"]
+    )
+    assert "GENERATION_TIMESTAMP" not in variables
 
 
-def test_generate_variables_deterministic_given_now() -> None:
-    a = generate_variables(now=FIXED_NOW)
-    b = generate_variables(now=FIXED_NOW)
+def test_generate_variables_is_deterministic_with_nothing_pinned() -> None:
+    """Repeated calls agree with no `now=` injection — there is no clock to pin."""
+    a = generate_variables()
+    b = generate_variables()
     assert a == b
+
+
+def test_missing_paper_date_fails_loudly(tmp_path) -> None:
+    """A config with no `paper.date` has no deterministic source for the date."""
+    config = yaml.safe_load(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))
+    config["paper"].pop("date", None)
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    with pytest.raises(ValueError, match="paper.date"):
+        generate_variables(config_path=path)
+
+    config["paper"]["date"] = "   "
+    path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    with pytest.raises(ValueError, match="paper.date"):
+        generate_variables(config_path=path)
 
 
 def test_all_manuscript_tokens_are_generated() -> None:
@@ -66,7 +84,7 @@ def test_all_manuscript_tokens_are_generated() -> None:
 
 
 def test_resolve_tree_writes_sections() -> None:
-    variables = generate_variables(now=FIXED_NOW)
+    variables = generate_variables()
     out = Path(tempfile.mkdtemp())
     resolved_dir, names = resolve_manuscript_tree(variables, output_dir=out)
     assert names
@@ -110,13 +128,13 @@ def test_generate_variables_rejects_malformed_sections() -> None:
 def test_require_outputs_rejects_an_incomplete_solution() -> None:
     """The require_outputs gate must actually fire on a gutted solution."""
     with pytest.raises(ValueError, match="missing result sections"):
-        generate_variables(solution={}, now=FIXED_NOW)
+        generate_variables(solution={})
 
     for section in REQUIRED_SOLUTION_SECTIONS:
         gutted = dict(mission_solution())
         gutted[section] = {}
         with pytest.raises(ValueError, match=re.escape(section)):
-            generate_variables(solution=gutted, now=FIXED_NOW)
+            generate_variables(solution=gutted)
 
 
 def test_require_outputs_false_actually_disables_the_gate() -> None:
@@ -127,24 +145,24 @@ def test_require_outputs_false_actually_disables_the_gate() -> None:
     fails later on a raw ``KeyError``. That contrast is what proves the flag
     is consulted rather than ignored.
     """
-    healthy = generate_variables(require_outputs=False, now=FIXED_NOW)
-    assert healthy == generate_variables(now=FIXED_NOW)
+    healthy = generate_variables(require_outputs=False)
+    assert healthy == generate_variables()
 
     gutted = dict(mission_solution())
     gutted["terrain"] = {}
     with pytest.raises(KeyError):
-        generate_variables(solution=gutted, require_outputs=False, now=FIXED_NOW)
+        generate_variables(solution=gutted, require_outputs=False)
     with pytest.raises(ValueError, match="missing result sections"):
-        generate_variables(solution=gutted, require_outputs=True, now=FIXED_NOW)
+        generate_variables(solution=gutted, require_outputs=True)
 
 
 def test_injected_solution_flows_into_the_tokens() -> None:
     """A supplied solution is what gets hydrated — not a re-read of the live one."""
     altered = dict(mission_solution())
     altered["terrain"] = {**altered["terrain"], "route_steps": 4321}
-    variables = generate_variables(solution=altered, now=FIXED_NOW)
+    variables = generate_variables(solution=altered)
     assert variables["TER_STEPS"] == "4321"
-    assert generate_variables(now=FIXED_NOW)["TER_STEPS"] != "4321"
+    assert generate_variables()["TER_STEPS"] != "4321"
 
 
 def test_config_mission_block_mirrors_settings() -> None:

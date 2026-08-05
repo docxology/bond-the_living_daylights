@@ -96,8 +96,12 @@ failures, `ruff` and `mypy` clean. Achieved figures are in
 gate, not a snapshot.
 
 Note that `scripts/z_generate_manuscript_variables.py` writes only into the
-git-ignored `output/` tree, so running it must leave `git status` clean — that
-is a live determinism check, not just a build step.
+git-ignored `output/` tree, so running it leaves `git status` clean. That is a
+hygiene check and nothing more: because `output/` is git-ignored, a clean
+`git status` would also survive the generator emitting different bytes every
+run. The determinism claim is bound instead by
+`tests/test_regeneration_determinism.py`, which regenerates the whole tree
+twice across a wall-clock second boundary and compares SHA-256 per file.
 
 ## Protocol for AI agents
 

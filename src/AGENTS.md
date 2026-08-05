@@ -24,4 +24,6 @@ mission adapter.
 and `figures/` may import `yaml` / `matplotlib`.
 
 **Determinism:** fixed seeds, no global RNG, no wall-clock in persisted
-artifacts (except the regeneration timestamp).
+artifacts — no exception. `MANUSCRIPT_DATE` is the committed `paper.date` from
+`manuscript/config.yaml`; `tests/test_regeneration_determinism.py` AST-scans
+this tree for any clock call and compares two full regenerations byte for byte.

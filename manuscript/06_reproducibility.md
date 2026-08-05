@@ -8,8 +8,14 @@ The mission solution uses a fixed seed ({{TER_SEED}}); the only randomness in
 the whole stack is the seeded terrain generator in
 [`terrain_ops.generate_terrain`](../src/the_living_daylights/terrain_ops.py),
 which is itself deterministic for a fixed seed. No wall-clock value enters any
-persisted artifact except the regeneration timestamp of this manuscript
-({{GENERATION_TIMESTAMP}}).
+persisted artifact — there is no exception. The manuscript carries a date
+({{MANUSCRIPT_DATE}}), but it is the committed `paper.date` from
+[`manuscript/config.yaml`](config.yaml), read like any other parameter, not the
+moment of hydration. An earlier version of this package stamped
+`datetime.now()` into this page and into
+`output/data/manuscript_variables.json`, which made the byte-identical claim
+below false on every rerun; the clock has been removed rather than the claim
+weakened.
 
 The BOND-API `MissionOutcome` carries a Provenance record with a stable
 `input_hash` (a sha256 of the canonical mission solution), so any report can be
@@ -63,5 +69,20 @@ Three tests carry the anti-drift load specifically:
 * `test_config_mission_block_mirrors_settings` pins the reader-facing
   `mission:` echo in `config.yaml` to `settings.py`, key for key.
 
-Re-running `z_generate_manuscript_variables.py` regenerates a byte-identical,
-git-clean tree (`output/` is git-ignored) — a live determinism proof.
+Re-running `z_generate_manuscript_variables.py` on one interpreter regenerates
+a byte-identical `output/` tree — every resolved manuscript section, the token
+JSON, and all four figure PNGs. The interpreter is the stated scope because
+`PYTHON_VERSION` is itself a token; nothing else in the tree varies between
+runs.
+
+That is a claim, so it is bound by a test rather than by assertion.
+[`test_regeneration_determinism.py`](../tests/test_regeneration_determinism.py)
+runs the generator twice as a real subprocess, deliberately straddling a
+wall-clock second boundary, and compares a SHA-256 of every produced file. A
+second test in that file AST-scans `src/` for any clock call
+(`datetime.now`/`utcnow`, `date.today`, `time.time`, `time.time_ns`,
+`time.monotonic`) reachable from the persisted-artifact path, and carries a
+positive control: a planted clock call in a temporary module must be reported,
+so the scan cannot pass by being blind. Note what the older
+`git status --short` check does *not* prove — `output/` is git-ignored, so that
+tree stays clean whatever the bytes say.

@@ -5,7 +5,7 @@ a deterministic domain core (sniper ballistics, riflescope optics, countersniper
 glint/acoustic/triangulation detection, terrain line-of-sight and overwatch
 ranking, a staged defection-handling protocol, and cover-weighted mountain/desert
 routing) behind the frozen BOND-API `MissionProvider`. Measured on this machine on
-2026-08-05 at commit `1853596`: **125 tests pass, 0 failures / 0 errors / 0 skips,
+2026-08-05, on the tree this file is committed with: **129 tests pass, 0 failures / 0 errors / 0 skips,
 99.44% line+branch coverage on `src/`** (`uv run pytest tests/ --cov=src
 --cov-fail-under=90`, Python 3.14.6), with `ruff check`, `ruff format --check`, and
 `mypy src/ scripts/` all clean. The two SEVERE adversarial-audit findings (an
@@ -195,7 +195,18 @@ uv run mypy src/ scripts/
 
 uv run python scripts/z_generate_manuscript_variables.py && git status --short
 # -> writes only into the git-ignored output/ tree; git status must stay empty.
-#    A dirty tree here is a determinism failure, not a build artifact.
+#    NOTE this proves hygiene, not determinism: output/ is git-ignored, so a
+#    clean status survives a generator that writes different bytes every run.
+#    Determinism is bound by tests/test_regeneration_determinism.py (two full
+#    subprocess regenerations across a second boundary, SHA-256 per file).
+
+# The same two-run comparison, by hand:
+R1=$(mktemp -d); R2=$(mktemp -d)
+uv run python scripts/z_generate_manuscript_variables.py --output-root "$R1" >/dev/null
+sleep 1
+uv run python scripts/z_generate_manuscript_variables.py --output-root "$R2" >/dev/null
+diff -r "$R1" "$R2" && echo "byte-identical"
+# -> "byte-identical".
 ```
 
 Live measured totals live in [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md).

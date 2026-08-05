@@ -20,8 +20,8 @@ the figure protocol, and the workflow for changing a section.
 | `02_methodology.md` | Module-by-module derivation of every algorithm | All families; cites every bibliography key | None |
 | `03_results.md` | The computed mission solution; **all four figures live here** | All result families | `fig:ballistics`, `fig:terrain`, `fig:glint`, `fig:overwatch` |
 | `04_conclusion.md` | What was shown, and how the anti-drift guarantees are enforced | None | None |
-| `05_experimental_setup.md` | Parameter tables by subsystem + software environment | Parameter tokens, `PYTHON_VERSION`, `GENERATION_TIMESTAMP` | None |
-| `06_reproducibility.md` | Determinism argument, artifact inventory, the verification gate | `TER_SEED`, `GENERATION_TIMESTAMP` | None |
+| `05_experimental_setup.md` | Parameter tables by subsystem + software environment | Parameter tokens, `PYTHON_VERSION`, `MANUSCRIPT_DATE` | None |
+| `06_reproducibility.md` | Determinism argument, artifact inventory, the verification gate | `TER_SEED`, `MANUSCRIPT_DATE` | None |
 | `07_scope_and_related_work.md` | Explicit non-claims, related work, intended use | None | None |
 | `99_references.md` | Annotated reference list grouped by what each source backs | `VERSION` | None |
 | `config.yaml` | Paper identity, authors, keywords, and a reader-facing `mission:` echo of `settings.py` | — | — |

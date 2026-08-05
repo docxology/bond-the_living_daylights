@@ -199,7 +199,8 @@ core imports `mission`, `manuscript_variables`, or `figures`.
 - `mission.py` must not grow business logic; it adapts and registers, nothing more.
 - The public shape of `MissionProvider` and `GADGETS` is frozen across the suite.
 - Results must be deterministic: fixed seeds, no global RNG, no wall-clock in
-  persisted artifacts (the manuscript's regeneration timestamp is the one
-  documented exception).
+  persisted artifacts — no exception. The manuscript's `MANUSCRIPT_DATE` comes
+  from the committed `paper.date` in `manuscript/config.yaml`, not from a clock.
+  Bound by `tests/test_regeneration_determinism.py`.
 - No metric may be hand-authored in prose; it must arrive as a token.
 - Everything under `output/` is regenerable and git-ignored.

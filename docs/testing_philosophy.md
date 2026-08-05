@@ -38,12 +38,21 @@ rather than asserting it:
 * identical provenance `input_hash` across calls;
 * identical terrain arrays and identical routes for a fixed seed;
 * identical figure **bytes** across two renders;
-* identical token maps for a pinned `now`.
+* identical token maps across repeated calls, with no clock to pin.
 
-No wall-clock value enters a persisted artifact. `Provenance.wall_time_s` is
-fixed at 0.0 precisely so an outcome is comparable across runs; the manuscript's
-regeneration timestamp is the single documented exception, and it is injectable
-(`generate_variables(now=…)`) so tests can pin it.
+No wall-clock value enters a persisted artifact, with no exception.
+`Provenance.wall_time_s` is fixed at 0.0 precisely so an outcome is comparable
+across runs, and `generate_variables()` reads no clock at all — the manuscript's
+date is the committed `paper.date` from `manuscript/config.yaml`.
+
+This is the one place a pinned-input test was actively harmful. The old
+`generate_variables(now=…)` override made every determinism test pass while the
+unpinned production path stamped `datetime.now()` into the manuscript and the
+token JSON: the test froze the exact input that was broken. The replacement,
+`tests/test_regeneration_determinism.py`, pins nothing — it runs the real
+generator script twice across a wall-clock second boundary and hashes the
+artifacts. A probe that injects the value it is meant to be checking cannot
+fail on it.
 
 ## Tests must be able to fail
 
@@ -112,9 +121,10 @@ out to be both impossible to trigger *and* to provide no safety — an
 | `tests/test_terrain_ops.py` | Seeded grid determinism and shape/landcover validation, the landcover table, step-cost adjacency plus the exposure term's exact contribution, Dijkstra route determinism, the strict cover-vs-cost trade-off, the cover audit and the planner both checked against the test's own oracle, the audit grading a hand-picked non-Dijkstra path, and cover-height semantics |
 | `tests/test_compute_mission.py` | Solution keys and cross-module values, byte-determinism, hash stability and shape, wind sensitivity, the strict cover-weight response, the reported overwatch nest being visible, and the cover term measured against both baselines (planner with the term off, and the grid mean) |
 | `tests/test_mission.py` | Runtime-checkable protocol compliance, brief identity and content, recon findings, plan steps, deterministic execution and provenance, the full five-stage flow, and gadget registration both module-level and explicit |
-| `tests/test_manuscript_variables.py` | Config loading and its three malformed-input rejections, token content, determinism under a pinned `now`, the live token cross-reference, strict resolution failure, the `require_outputs` gate under each missing section, solution injection, and the `config.yaml` ↔ `settings.py` mirror |
+| `tests/test_manuscript_variables.py` | Config loading and its three malformed-input rejections, token content, determinism with nothing pinned, the missing/blank `paper.date` rejection, the live token cross-reference, strict resolution failure, the `require_outputs` gate under each missing section, solution injection, and the `config.yaml` ↔ `settings.py` mirror |
 | `tests/test_figures.py` | All four plates render to real files, byte-determinism across renders, and default output-directory resolution |
 | `tests/test_scripts_smoke.py` | Every thin CLI runs as a real subprocess with exit code 0 and produces its expected stdout and artifacts |
+| `tests/test_regeneration_determinism.py` | The byte-identical-regeneration claim itself: two full generator runs as real subprocesses, deliberately straddling a wall-clock second boundary, compared SHA-256 per file; plus an AST scan of `src/` for any clock call, with a positive control that plants five clock calls the scanner must report |
 
 ## Adding a test
 

@@ -6,7 +6,7 @@
 
 | Metric | Value |
 | --- | --- |
-| Test count | 125 |
+| Test count | 129 |
 | Coverage (line + branch, `src/`) | 99.44% |
 | Coverage gate | `--cov-fail-under=90` |
 | Failures / errors / skips | 0 / 0 / 0 |

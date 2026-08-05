@@ -5,13 +5,20 @@ Every ``{{TOKEN}}`` in ``manuscript/NN_*.md`` resolves through
 deterministic mission solution (:func:`~the_living_daylights.compute_mission.mission_solution`).
 Metrics flow through this module so the manuscript cannot drift from execution
 and is never hand-authored in prose.
+
+No wall clock is read here. Every token is a pure function of committed inputs
+(``manuscript/config.yaml``, ``settings.py``, the mission solution) plus the
+running interpreter version, so two regenerations on one interpreter produce
+byte-identical artifacts. ``MANUSCRIPT_DATE`` is the manuscript's *committed*
+date from ``config.yaml``, not the moment of hydration — this module used to
+stamp ``datetime.now()`` into the prose, which silently falsified the
+package's byte-identical-regeneration claim.
 """
 
 from __future__ import annotations
 
 import platform
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -72,7 +79,6 @@ def generate_variables(
     config_path: str | Path | None = None,
     require_outputs: bool = True,
     solution: dict[str, Any] | None = None,
-    now: datetime | None = None,
 ) -> dict[str, str]:
     """Compute the ``{{TOKEN}}`` → value mapping for the manuscript.
 
@@ -85,12 +91,15 @@ def generate_variables(
             :func:`~the_living_daylights.compute_mission.mission_solution`).
             Supplying it is what makes ``require_outputs`` an enforceable gate
             rather than an assertion that can never fire.
-        now: Timestamp override for deterministic generation (UTC default).
+
+    Returns:
+        The ``{{TOKEN}}`` → value mapping. It reads no wall clock, so repeated
+        calls on one interpreter are equal.
 
     Raises:
-        ValueError: if the config sections are malformed, or if
-            ``require_outputs`` is set and the solution is missing or has an
-            empty required section.
+        ValueError: if the config sections are malformed, if ``paper.date`` is
+            missing or empty, or if ``require_outputs`` is set and the solution
+            is missing or has an empty required section.
     """
     config = load_manuscript_config(config_path)
     paper = config.get("paper", {})
@@ -99,6 +108,14 @@ def generate_variables(
     keywords = config.get("keywords", [])
     if not isinstance(keywords, list):
         raise ValueError("manuscript config 'keywords' must be a list")
+    # The manuscript's date is a committed value, never the hydration moment:
+    # reading a clock here would make every regeneration differ in bytes.
+    manuscript_date = str(paper.get("date", "")).strip()
+    if not manuscript_date:
+        raise ValueError(
+            "manuscript config 'paper.date' must be a non-empty string — it is the "
+            "committed, deterministic source of MANUSCRIPT_DATE"
+        )
 
     sol = mission_solution() if solution is None else solution
     if require_outputs:
@@ -229,9 +246,9 @@ def generate_variables(
         "TER_MIN_COVER": _fmt(float(ter["min_cover"]), 3),
         "TER_MIN_COVER_INDEX": str(ter["min_cover_index"]),
         "TER_COVER_POINTS": str(ter["cover_points"]),
-        # environment
+        # environment / identity
         "PYTHON_VERSION": platform.python_version(),
-        "GENERATION_TIMESTAMP": (now or datetime.now(timezone.utc)).isoformat(timespec="seconds"),
+        "MANUSCRIPT_DATE": manuscript_date,
     }
     return variables
 
