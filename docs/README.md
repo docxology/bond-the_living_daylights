@@ -37,7 +37,7 @@ by `manuscript_variables.py`; none is typed into prose.
 
 * [`../README.md`](../README.md) — what the package is, install and run.
 * [`../AGENTS.md`](../AGENTS.md) — the package-level layer contract.
-* [`../TODO.md`](../TODO.md) — what is built and what remains.
+* [`../TODO.md`](../TODO.md) — open work, accepted limitations, and the verification gate.
 * [`../STANDALONE.md`](../STANDALONE.md) — the standalone-fork contract.
 * [`../manuscript/`](../manuscript/) — the paper, its config, and its bibliography.
 * [`../.agents/skills/the-living-daylights/SKILL.md`](../.agents/skills/the-living-daylights/SKILL.md) — the in-repo agent skill descriptor.

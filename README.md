@@ -108,7 +108,7 @@ them, so none can go stale.
 * [`docs/agent_instructions.md`](docs/agent_instructions.md) — hard rules for modifying the package.
 * [`docs/testing_philosophy.md`](docs/testing_philosophy.md) — the no-mock, real-data, determinism doctrine.
 * [`AGENTS.md`](AGENTS.md) — layer contract and verification.
-* [`TODO.md`](TODO.md) — what is built and what remains.
+* [`TODO.md`](TODO.md) — open work, accepted limitations, and the verification gate.
 * [`manuscript/`](manuscript/) — the paper, its config, and its bibliography.
 
 Local-only working tree: there is no remote, and nothing here is ever pushed.

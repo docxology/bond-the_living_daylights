@@ -1,97 +1,203 @@
-# SNIPER'S NEST — TODO
+# TODO — the_living_daylights (SNIPER'S NEST)
 
-Status of `the_living_daylights` after the phase-5 documentation and
-code-review pass. "Built" is what exists and is tested; "Open" is real
-remaining work; nothing here is aspirational.
+SNIPER'S NEST is the PROJECT BOND film package for *The Living Daylights* (1987):
+a deterministic domain core (sniper ballistics, riflescope optics, countersniper
+glint/acoustic/triangulation detection, terrain line-of-sight and overwatch
+ranking, a staged defection-handling protocol, and cover-weighted mountain/desert
+routing) behind the frozen BOND-API `MissionProvider`. Measured on this machine on
+2026-08-05 at commit `1853596`: **125 tests pass, 0 failures / 0 errors / 0 skips,
+99.44% line+branch coverage on `src/`** (`uv run pytest tests/ --cov=src
+--cov-fail-under=90`, Python 3.14.6), with `ruff check`, `ruff format --check`, and
+`mypy src/ scripts/` all clean. The two SEVERE adversarial-audit findings (an
+algebraically inverted `time_of_flight`, and a "cover audit" that shared its
+private summary helper with the planner) are fixed and regression-pinned; what
+remains below is real.
 
-## Built
+## Open work
 
-**Pure domain core** (`src/the_living_daylights/`) — stdlib + numpy only:
+### Correctness
 
-| Module | Built | Tests |
-| --- | --- | --- |
-| `ballistics.py` | RK4 point-mass trajectory, rifle zero + near/far zero, drop, time of flight, crosswind drift + wind hold, rules of engagement, cello-case shelf packing, assembly time | `tests/test_ballistics.py` |
-| `optics.py` | MOA↔mrad, click value + whole-click solutions, mil-dot ranging + inverse, holdover, parallax, field of view, zero click schedule | `tests/test_optics.py` |
-| `countersniper.py` | Glint geometry / contrast / angular fraction / SNR / detection CDF, sound speed, crack-bang delay + range, least-squares bearing triangulation with residual | `tests/test_countersniper.py` |
-| `visibility.py` | Bresenham line of sight with clearance and first blocker, viewsheds, weighted overwatch ranking, `best_overwatch` | `tests/test_visibility.py` |
-| `defection_protocol.py` | Staged weighted risk scoring, monotonic approval + plan gate, KOSKOV scenario; backstop `EvidenceCheck` / certainty / verdict | `tests/test_defection_protocol.py` |
-| `terrain_ops.py` | Seeded elevation/landcover/cover grid, blended step cost, Dijkstra routing, separately implemented cover audit | `tests/test_terrain_ops.py` |
-| `settings.py` | Every fixed mission parameter (single source of truth) | exercised throughout |
-| `compute_mission.py` | The one deterministic mission solution + SHA-256 `input_hash` | `tests/test_compute_mission.py` |
-| `mission.py` | Frozen BOND-API `MissionProvider` (brief/recon/plan/execute/debrief) + module-level `GADGETS` | `tests/test_mission.py` |
-| `manuscript_variables.py` | Token hydration with an enforceable `require_outputs` gate and injectable solution; strict tree resolution | `tests/test_manuscript_variables.py` |
-| `figures/plots.py` | Four deterministic plates (ballistics, exfil route, glint-vs-range, overwatch nests) | `tests/test_figures.py` |
+**C1 — `assess_cover`'s `waypoint_cover` silently collapses a revisited cell.**
+`src/the_living_daylights/terrain_ops.py:338` builds the map as a dict
+comprehension keyed on `f"{r},{c}"`, so a path that visits the same cell twice
+yields fewer entries than it has waypoints — while the docstring at
+`terrain_ops.py:309` promises "per-waypoint concealment". `mean_cover`,
+`min_cover`, and `min_cover_index` are computed over the full array and are
+correct; only the reported map is lossy. Latent today because Dijkstra never
+revisits a cell, but `assess_cover` is documented (`terrain_ops.py:305-307`) as
+grading "an arbitrary sequence of waypoints — connected or not", so a caller
+grading a hand-drawn there-and-back path gets a short map with no error.
+*Done when:* either the return type carries one entry per waypoint in path order
+(keyed by index, or a tuple), or the docstring states the dedup and
+`assess_cover` raises on a repeated waypoint — and a test grades a path
+containing a repeat and asserts the map's length against the path's.
+*Command:* `uv run pytest tests/test_terrain_ops.py -v`
 
-**Thin scripts** — `brief.py`, `recon.py`, `plan.py`, `execute.py`,
-`debrief.py`, `00_preflight.py`, `z_generate_manuscript_variables.py`, all
-covered by real subprocess smoke tests.
+### Verification
 
-**Manuscript** — the full canonical section set (`00`–`07`, `99`) plus
-`preamble.md`, `config.yaml`, `references.bib`, and the directory's own README /
-AGENTS / SYNTAX. Every metric arrives as a token; the bibliography cites real,
-checkable sources.
+**V1 — the overwatch visibility gate is green-by-construction on the shipped
+configuration.** *(carried from the unresolved audit list.)*
+`src/the_living_daylights/compute_mission.py:158` correctly selects the reported
+nest through `visibility.best_overwatch` (top-scored *visible* candidate) rather
+than `ranked[0]` (top-scored, possibly blind). The policy is right, but on the
+mission's own terrain the two coincide: I re-measured it this session —
+`ranked[0]` and `best_overwatch` both return cell `(6, 0)` at score
+`0.71375`, and exactly 1 of 16 candidates is visible at all. Reverting
+`compute_mission.py:158` to `ranked[0]` therefore leaves 125/125 passing. The
+falsifying case lives only in a constructed grid
+(`tests/test_visibility.py:105-133`,
+`test_best_overwatch_skips_a_blind_top_scorer`), not on the production path. The
+limitation is stated honestly in `tests/test_compute_mission.py:60-69` and
+`manuscript/02_methodology.md:155-163` — it is disclosed, not bound.
+*Done when:* mutating `compute_mission.py:158` to `ranked[0]` turns the suite red.
+That needs an injection point — `mission_solution()`
+(`compute_mission.py:33-35`) currently accepts only `wind_mps` and
+`cover_weight`, so add an injectable terrain grid / candidate set, or find a
+`TERRAIN_SEED` + `OVERWATCH_CANDIDATE_STEP` pair where a blind candidate
+out-scores the visible one and pin the shipped solution against it.
+*Command:* edit line 158 to `best = ranked[0]`, then
+`uv run pytest tests/ -q` — it must fail. Revert.
 
-**Documentation** — `README.md`, `AGENTS.md`, this file, and the full `docs/`
-baseline (`README.md`, `AGENTS.md`, `agent_instructions.md`, `architecture.md`,
-`testing_philosophy.md`, `_generated/COUNTS.md`).
+**V2 — the plan gate / backstop verdict pairing has no negative control.**
+*(carried from the unresolved audit list.)* `defection_protocol.koskov_scenario()`
+(`src/the_living_daylights/defection_protocol.py:205`) and
+`koskov_verification()` (`:312`) are two authored constant tables whose verdicts
+agree. The manuscript no longer calls this independent corroboration
+(`manuscript/04_conclusion.md:36-38`,
+`manuscript/07_scope_and_related_work.md:64-66`), which is correct — but nothing
+proves the pairing is even a *design-consistency* check, because no test shows
+the two models can disagree. `tests/test_defection_protocol.py:62` and `:136`
+each pin one model in isolation.
+*Done when:* a test perturbs one table (e.g. raises a `RiskFactor` score past the
+no-go threshold, or drops a passing `EvidenceCheck`) and asserts that exactly one
+of the two verdicts moves — so agreement on the shipped tables is a fact that
+could have come out otherwise.
+*Command:* `uv run pytest tests/test_defection_protocol.py -v`
 
-**Gates** — `pytest --cov=src --cov-fail-under=90` green (live totals in
-[`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md)); `ruff` + `mypy`
-clean; zero mocks; deterministic; zero `template[_]code_project` strings; own
-git repo, path-scoped commits.
+**V3 — the SPIE reference DOI has never been checked to resolve.**
+*(carried from the unresolved audit list.)* `manuscript/references.bib:35` and
+`manuscript/99_references.md:24` carry `10.1117/12.266747` for
+`duckworth1996counter`. That digit correction arrived as an unattributed working-tree
+edit, was absorbed by commit `1853596`, and is now internally consistent across both
+files — but nobody has confirmed the DOI resolves to the cited paper. No other
+reference in the file has been re-checked either.
+*Done when:* every DOI in `manuscript/references.bib` has been resolved once
+against doi.org and the result recorded (a check date in a comment, or a note in
+`manuscript/AGENTS.md`).
+*Command:* `curl -sIL https://doi.org/10.1117/12.266747 | head -1` (needs network
+egress to doi.org, which the current sandbox denies — run it outside the sandbox).
 
-## Fixed in the phase-5 review
+**V4 — `figures/plots.py` `best is None` arm is unreachable in test.**
+`src/the_living_daylights/figures/plots.py:183->186` is the only uncovered branch
+outside the defensive-guard set (see Known limitations). `render_overwatch_figure`
+(`plots.py:163-166`) reads `mission_solution()` directly and takes no injection
+point, and no shipped seed produces a target that nothing can see.
+*Done when:* `render_overwatch_figure` accepts an injected solution (mirroring
+`manuscript_variables.py`'s injectable `solution=`), and a test renders a
+figure from a solution whose `overwatch.best_cell` is `None`.
+*Command:* `uv run pytest tests/test_figures.py --cov=src/the_living_daylights/figures --cov-report=term-missing`
+— `plots.py` reaches 100%.
 
-- `pack_cello_case` reported each part's lane and span by re-zipping placements
-  against the caller's input order, while the packer sorts parts
-  width-descending internally — so `barrel_receiver` (0.62 m) was reported in
-  `stock`'s 0.48 m slot and vice versa. Placements now carry their own part;
-  `test_cello_layout_binds_each_part_to_its_own_slot` is the regression guard.
-- The manuscript's methodology described the glint geometry factor as a
-  **cosine** sun-elevation term; the code uses `sin`.
-- The methodology cited the ballistic holdover token as if it were the mil-dot
-  *reticle span*, producing a false statement about how ranging works.
-- `manuscript/config.yaml` declared its `mission:` block "the single
-  authoritative source for the domain modules" — it is read by nothing. It is
-  now labelled a reader-facing echo and pinned to `settings.py` by a test.
-- `generate_variables`'s `require_outputs` guard could never fire. It now
-  checks named required sections and accepts an injected `solution=`, so it is
-  testable — and is tested against each section removed in turn.
-- Removed two unreachable guards that provided no safety (`ballistics`
-  zero-area check behind a validating constructor; a `tau <= 0` branch made
-  dead by adding real `v0` validation to `time_of_flight`).
-- Removed dead code: an unused `mountain_c` landcover alias and an unused
-  `landcover` parameter on `terrain_ops._cover`.
-- Strengthened weak assertions: the cover-weight trade-off is now `>` not `>=`
-  (a `>=` would pass with the parameter ignored entirely), and the exposure
-  term's exact cost contribution is asserted.
+### Documentation
 
-## Open
+**D1 — the manuscript's reproducibility recipe type-checks less than the package
+claims.** `manuscript/06_reproducibility.md:36` gives `uv run mypy src/`, while
+`README.md:95` and `AGENTS.md:87` both give `uv run mypy src/ scripts/`, and
+`README.md:99` claims mypy cleanliness "on `src/` and `scripts/`". An explicit
+path argument overrides `pyproject.toml`'s `files = ["src", "scripts"]`, so a
+reader following the manuscript never type-checks `scripts/`.
+*Done when:* the three commands are identical.
+*Command:* `grep -rn "mypy" README.md AGENTS.md manuscript/06_reproducibility.md`
+— one command string.
 
-- **bond-utilities provenance (not yet bound).** The mission computes its own
-  deterministic `input_hash`. When the shared helper lands, delegate outcome
-  persistence to `bond_utilities.mission_io.record_provenance_outcome`.
-  Acceptance: a recorded outcome whose provenance block equals `execute()`'s
-  `Provenance` field for field.
-- **Unreachable-by-construction guards.** `plan_route`'s "goal is unreachable"
-  raise cannot fire on a fully connected 4-adjacent grid, `_sample_at`'s
-  zero-width-span branch cannot fire on a monotone trajectory, and
-  `capture_zero`'s exact-zero crossing needs a float sample landing precisely
-  on the sight line. All are kept as defensive guards for future callers, and
-  all are why `src/` coverage is not 100%. If the terrain model ever grows
-  impassable cells, the first becomes live and needs a test. The authoritative,
-  exhaustive list of uncovered lines and partial branches lives in
-  [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md) — do not maintain a
-  second enumeration here.
-- **`plots.py` `best is None` branch** is uncovered: no seed currently produces
-  a target that no candidate can see. Covering it needs a fixture grid rather
-  than the mission's own, which would mean parameterizing the figure functions.
+**D2 — `AGENTS.md:88` documents a weaker no-mock check than the one that ships.**
+The line is
+`grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo "no mocks"`.
+It scans only `tests/`, matches four literal strings (an aliased
+`import unittest.mock as m` slips through), and `|| echo` swallows the exit code
+so it can never fail a gate. The real gate is
+`tests/test_no_mock_frameworks.py:25` (`SCANNED_DIRS = ("src", "tests",
+"scripts")`, AST-parsed, with a planted-mock positive control at `:111` and a
+non-vacuity control at `:97`).
+*Done when:* `AGENTS.md` cites `tests/test_no_mock_frameworks.py` instead of the
+grep, matching how `manuscript/06_reproducibility.md:38-46` already describes it.
+*Command:* `grep -n "MagicMock" AGENTS.md` — no match.
 
-## Not in scope (deliberate)
+### Extension
 
-Stochastic adversary modelling; full atmosphere (spin, Magnus, Coriolis,
-transonic drag rise, layering); spectral or polarization radiometry; ballistic
-shockwave geometry and acoustic multipath; bearing uncertainty models; earth
-curvature or refraction in line of sight; human factors and communications.
-These are enumerated with reasons in
-[`manuscript/07_scope_and_related_work.md`](manuscript/07_scope_and_related_work.md).
+**E1 — bind outcome persistence to the shared bond-utilities helper.** The blocker
+recorded in the previous TODO is gone: `bond_utilities.mission_io.record_provenance_outcome`
+now exists (`../bond-utilities/src/bond_utilities/mission_io.py:153`), alongside
+`verify_provenance` (`:212`) and `append_outcome` (`:296`). This package still
+computes its own hash — `mission.py:207` fills `Provenance(input_hash=input_hash())`
+from `compute_mission.input_hash()` — and `pyproject.toml` does not depend on
+`bond-utilities` at all.
+*Done when:* a persisted record's `provenance` block equals `execute()`'s
+`Provenance` field for field, and `verify_provenance(record)` is `True`.
+*Command:* `uv run pytest tests/test_mission.py -k provenance -v`
+
+## Known limitations (not bugs)
+
+* **The two-bearing triangulation residual is arithmetic, not a measurement.**
+  `settings.TRIANGULATION_OBSERVERS` holds exactly two observers, so the
+  least-squares fit is two equations in two unknowns and the residual is
+  identically zero for any non-parallel pair. It is not evidence of localization
+  accuracy. Pinned by `tests/test_countersniper.py:96`
+  (`test_two_bearing_residual_is_zero_by_construction_not_measured`) with a
+  positive control at `:117` proving the residual code path can report a real
+  number. Making it informative needs a bearing-uncertainty model, which
+  `manuscript/07_scope_and_related_work.md` declares out of scope. **If a noise
+  model is ever added, this stops being a limitation and the disclosure
+  paragraphs must be revisited.**
+* **The defection scenario and its backstop verification are both authored
+  tables.** There is no independent scenario source for a fictional mission —
+  any second table would be written by the same hand. The manuscript says so
+  outright (`04_conclusion.md:36-38`). V2 above is about binding the weaker
+  consistency claim, not about manufacturing independence.
+* **The cover audit is a cross-implementation check, not corroboration.**
+  `terrain_ops.assess_cover` (vectorised numpy) and `_summarize` (scalar loop)
+  no longer share a helper, and `tests/test_terrain_ops.py` checks both against
+  the test's own re-derived oracle rather than against each other. That catches
+  implementation drift; both still encode one concealment definition, so a wrong
+  definition would be reproduced identically by both.
+* **The exfil route is below the field's mean concealment.** Measured, not
+  hidden: the shipped route scores ~0.484 mean cover against a grid mean of
+  ~0.490. `compute_mission.py:129-136` computes the `cover_weight=0.0` baseline
+  and the field mean so the comparison is reported rather than asserted.
+* **Five uncovered defensive guards keep `src/` off 100%.** `_sample_at`'s
+  zero-width span, `capture_zero`'s exact-zero crossing, Dijkstra's empty-heap
+  exit and the unreachable-goal `raise`. All are unreachable on a 4-connected
+  grid and a strictly advancing integrator. The exhaustive line-by-line list is
+  `docs/_generated/COUNTS.md` — do not maintain a second enumeration. (V4's
+  `plots.py` branch is listed there too, but is closeable, so it is a TODO.)
+* **Out of scope by design:** stochastic adversary modelling; full atmosphere
+  (spin, Magnus, Coriolis, transonic drag rise, layering); spectral or
+  polarization radiometry; ballistic shockwave geometry and acoustic multipath;
+  bearing uncertainty; earth curvature and refraction in line of sight; human
+  factors and communications. Each is listed with a reason in
+  `manuscript/07_scope_and_related_work.md`.
+
+## Verification
+
+Run from this directory. All four are green at commit `1853596`.
+
+```bash
+uv run pytest tests/ --cov=src --cov-fail-under=90
+# -> 125 passed; TOTAL 99.44% (line+branch on src/); gate is 90%.
+#    This command enforces coverage AND the no-mock AST scan
+#    (tests/test_no_mock_frameworks.py). It does NOT run ruff or mypy.
+
+uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
+# -> "All checks passed!" and "39 files already formatted".
+
+uv run mypy src/ scripts/
+# -> "Success: no issues found in 20 source files".
+
+uv run python scripts/z_generate_manuscript_variables.py && git status --short
+# -> writes only into the git-ignored output/ tree; git status must stay empty.
+#    A dirty tree here is a determinism failure, not a build artifact.
+```
+
+Live measured totals live in [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md).
+This is a local-only working tree: no remote, never push, commit path-scoped
+inside this package only.
