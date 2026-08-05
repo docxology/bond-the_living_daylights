@@ -21,7 +21,7 @@ what it backs in the code:
 3. Duckworth, G. L., Gilbert, D. C., & Barger, J. E. (1996). Acoustic
    counter-sniper system. *Proc. SPIE 2938: Command, Control, Communications,
    and Intelligence Systems for Law Enforcement*, 262–275.
-   doi:10.1117/12.266767. `[@duckworth1996counter]`
+   doi:10.1117/12.266747. `[@duckworth1996counter]`
 4. Lédeczi, Á., Nádas, A., Völgyesi, P., Balogh, G., Kusy, B., Sallai, J., Pap,
    G., Dóra, S., Molnár, K., Maróti, M., & Simon, G. (2005). Countersniper
    system for urban warfare. *ACM Transactions on Sensor Networks*, 1(2),
