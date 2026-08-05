@@ -61,9 +61,13 @@ def test_plan_route_deterministic_and_cover_tradeoff() -> None:
     # determinism: identical route and cost on re-run
     again = t.plan_route(grid, start, goal)
     assert again.path == route.path and again.total_cost == route.total_cost
-    # a cover-seeking route does not sacrifice mean cover
+    # a heavy cover weight must actually buy concealment (strict, not >=:
+    # a >= assertion would pass even if cover_weight were ignored entirely)
     covered = t.plan_route(grid, start, goal, cover_weight=8.0)
-    assert covered.mean_cover >= route.mean_cover
+    assert covered.mean_cover > route.mean_cover
+    assert covered.path != route.path
+    # and it pays for that concealment in blended cost
+    assert covered.total_cost > route.total_cost
 
 
 def test_plan_route_errors() -> None:
@@ -80,7 +84,46 @@ def test_assess_cover() -> None:
     audit = t.assess_cover(grid, route.path)
     assert "mean_cover" in audit and "cover_points" in audit and "waypoint_cover" in audit
     assert 0.0 <= float(audit["mean_cover"]) <= 1.0
+    # the independent audit must reproduce the planner's own numbers exactly
+    assert float(audit["mean_cover"]) == pytest.approx(route.mean_cover)
+    assert float(audit["min_cover"]) == pytest.approx(route.min_cover)
+    assert audit["cover_points"] == route.cover_points
+    # and the per-waypoint map must cover every step with the grid's own values
+    waypoints = audit["waypoint_cover"]
+    assert isinstance(waypoints, dict)
+    assert len(waypoints) == len({cell for cell in route.path})
+    cover = grid.cover_array()
+    for (r, c), value in ((tuple(int(v) for v in k.split(",")), v) for k, v in waypoints.items()):
+        assert value == pytest.approx(float(cover[r, c]))
     with pytest.raises(ValueError):
         t.assess_cover(grid, ())
     with pytest.raises(ValueError):
         t.assess_cover(grid, ((0, 999),))
+
+
+def test_cover_array_tracks_cover_height_not_landcover_code() -> None:
+    """Concealment is a function of the cover-height field, honoured verbatim."""
+    grid = t.generate_terrain(seed=7)
+    # An open-desert cell (low base cover) hand-raised to full standing cover
+    # must read as fully concealed — the landcover code is not re-consulted.
+    grid.cover_height[0, 0] = t.COVER_THRESHOLD_M
+    assert float(grid.cover_array()[0, 0]) == pytest.approx(1.0)
+    grid.cover_height[0, 0] = 0.0
+    assert float(grid.cover_array()[0, 0]) == pytest.approx(0.0)
+
+
+def test_step_cost_exposure_term_is_consumed() -> None:
+    """cover_weight must change the cost of entering an exposed cell."""
+    grid = t.generate_terrain(seed=7)
+    grid.cover_height[0, 1] = 0.0  # fully exposed destination cell
+    cheap = t.step_cost(grid, 0, 0, 0, 1, cover_weight=0.0)
+    dear = t.step_cost(grid, 0, 0, 0, 1, cover_weight=4.0)
+    # exposure == 1.0, so the delta is exactly cover_weight * cell_size_m
+    assert dear - cheap == pytest.approx(4.0 * grid.cell_size_m)
+
+
+def test_terrain_grid_rejects_non_square_arrays() -> None:
+    """Matching but non-square shapes are rejected by the squareness check."""
+    rect = np.zeros((2, 3))
+    with pytest.raises(ValueError, match="square"):
+        t.TerrainGrid(rect, np.zeros((2, 3), dtype=np.int64), rect.copy(), 500.0, 1)

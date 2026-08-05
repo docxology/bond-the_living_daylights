@@ -20,7 +20,12 @@ import yaml
 from the_living_daylights import settings
 from the_living_daylights.compute_mission import mission_solution
 
-__all__ = ["generate_variables", "load_manuscript_config", "resolve_manuscript_tree"]
+__all__ = [
+    "REQUIRED_SOLUTION_SECTIONS",
+    "generate_variables",
+    "load_manuscript_config",
+    "resolve_manuscript_tree",
+]
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = PACKAGE_ROOT / "manuscript" / "config.yaml"
@@ -46,19 +51,46 @@ def _fmt(value: float, ndigits: int = 3) -> str:
     return f"{value:.{ndigits}f}"
 
 
+#: Mission-solution sections every result token reads from. ``require_outputs``
+#: checks these by name, so a solution that silently loses a section fails
+#: hydration loudly instead of emitting half a manuscript.
+REQUIRED_SOLUTION_SECTIONS: tuple[str, ...] = (
+    "ballistics",
+    "rules_of_engagement",
+    "optics",
+    "countersniper",
+    "cello_case",
+    "defection",
+    "verification",
+    "terrain",
+    "overwatch",
+)
+
+
 def generate_variables(
     *,
     config_path: str | Path | None = None,
     require_outputs: bool = True,
+    solution: dict[str, Any] | None = None,
     now: datetime | None = None,
 ) -> dict[str, str]:
     """Compute the ``{{TOKEN}}`` → value mapping for the manuscript.
 
     Args:
         config_path: Override for ``manuscript/config.yaml``.
-        require_outputs: When True (default), require the deterministic mission
-            solution to be non-empty so no result token falls back to prose.
+        require_outputs: When True (default), require every section of
+            :data:`REQUIRED_SOLUTION_SECTIONS` to be present and non-empty in
+            the mission solution, so no result token falls back to prose.
+        solution: Override for the mission solution (defaults to the live
+            :func:`~the_living_daylights.compute_mission.mission_solution`).
+            Supplying it is what makes ``require_outputs`` an enforceable gate
+            rather than an assertion that can never fire.
         now: Timestamp override for deterministic generation (UTC default).
+
+    Raises:
+        ValueError: if the config sections are malformed, or if
+            ``require_outputs`` is set and the solution is missing or has an
+            empty required section.
     """
     config = load_manuscript_config(config_path)
     paper = config.get("paper", {})
@@ -68,9 +100,14 @@ def generate_variables(
     if not isinstance(keywords, list):
         raise ValueError("manuscript config 'keywords' must be a list")
 
-    sol = mission_solution()
-    if require_outputs and not sol:
-        raise ValueError("mission solution is empty — cannot hydrate result tokens")
+    sol = mission_solution() if solution is None else solution
+    if require_outputs:
+        missing = [name for name in REQUIRED_SOLUTION_SECTIONS if name not in sol or not sol[name]]
+        if missing:
+            raise ValueError(
+                "mission solution is missing result sections "
+                f"{missing} — cannot hydrate result tokens"
+            )
 
     bal = sol["ballistics"]
     roe = sol["rules_of_engagement"]
@@ -116,7 +153,14 @@ def generate_variables(
         "MIL_READING_MILS": _fmt(float(settings.MIL_READING_MILS), 1),
         "OPT_HOLDOVER_MILS": _fmt(float(sol["optics"]["holdover_mils"]), 2),
         "OPT_PARALLAX_MM": _fmt(float(sol["optics"]["parallax_shift_m"]) * 1000.0, 1),
+        "OPT_PARALLAX_FOCUS_M": _fmt(float(settings.PARALLAX_FOCUS_M), 0),
+        "OPT_TARGET_SIZE_M": _fmt(float(settings.TARGET_SIZE_M), 2),
         # countersniper detection + localization
+        "CS_SUN_ELEVATION_DEG": _fmt(float(sol["countersniper"]["sun_elevation_deg"]), 0),
+        "CS_SPECULAR_HALF_DEG": _fmt(float(settings.SPECULAR_HALF_WIDTH_DEG), 1),
+        "CS_LENS_REFLECTIVITY": _fmt(float(settings.LENS_REFLECTIVITY), 2),
+        "CS_RESOLUTION_MRAD": _fmt(float(settings.RESOLUTION_MRAD), 1),
+        "CS_NUM_OBSERVERS": str(len(settings.TRIANGULATION_OBSERVERS)),
         "CS_AZIMUTH_DELTA_DEG": _fmt(float(sol["countersniper"]["azimuth_delta_deg"]), 1),
         "CS_GLINT_GEOMETRY": _fmt(float(sol["countersniper"]["glint_geometry_factor"]), 3),
         "CS_GLINT_SNR": _fmt(float(sol["countersniper"]["glint_snr"]), 1),
@@ -139,18 +183,29 @@ def generate_variables(
         "OW_BEST_DISTANCE_M": _fmt(float(sol["overwatch"]["best_distance_m"]), 0),
         "OW_BEST_COVER": _fmt(float(sol["overwatch"]["best_cover"]), 2),
         "OW_BEST_ELEV_GAIN_M": _fmt(float(sol["overwatch"]["best_elevation_gain_m"]), 1),
+        "OW_CANDIDATE_STEP": str(sol["overwatch"]["candidate_step"]),
+        "OW_MAX_RANGE_CELLS": str(settings.OVERWATCH_MAX_RANGE_CELLS),
+        "OW_EYE_HEIGHT_M": _fmt(float(settings.OVERWATCH_EYE_HEIGHT_M), 2),
+        "OW_CLEARANCE_M": _fmt(float(settings.OVERWATCH_CLEARANCE_M), 2),
         # evidence verification
         "VER_NUM_CHECKS": str(sol["verification"]["num_checks"]),
+        "VER_CHECK_LABELS": ", ".join(str(c) for c in sol["verification"]["check_labels"]),
         "VER_CERTAINTY": _fmt(float(sol["verification"]["certainty"]), 3),
         "VER_VERDICT": str(sol["verification"]["verdict"]),
         # cello case
         "CELL_NUM_PARTS": str(cell["num_parts"]),
+        "CELL_PART_NAMES": ", ".join(str(p) for p in cell["parts"]),
         "CELL_FITS": str(cell["fits"]).lower(),
         "CELL_LANES": str(cell["lanes_used"]),
         "CELL_EFFICIENCY": _fmt(float(cell["packing_efficiency"]), 3),
+        "CELL_PACKED_LENGTH_M": _fmt(float(cell["packed_length_m"]), 2),
+        "CELL_CASE_L_M": _fmt(float(cell["interior_length_m"]), 2),
+        "CELL_CASE_W_M": _fmt(float(cell["interior_width_m"]), 2),
+        "CELL_CASE_D_M": _fmt(float(cell["interior_depth_m"]), 2),
         "CELL_ASSEMBLY_S": _fmt(float(cell["assembly_time_s"]), 0),
         # defection protocol
         "DEF_NUM_STAGES": str(defe["num_stages"]),
+        "DEF_STAGE_NAMES": ", ".join(str(s) for s in defe["stages"]),
         "DEF_PLAN_SCORE": _fmt(float(defe["plan_score"]), 3),
         "DEF_PLAN_VERDICT": str(defe["plan_verdict"]),
         "DEF_GATE": str(defe["gate_stage"]),
@@ -160,10 +215,13 @@ def generate_variables(
         "TER_SEED": str(ter["seed"]),
         "TER_N": str(ter["grid_n"]),
         "TER_CELL_M": _fmt(float(ter["cell_size_m"]), 0),
+        "TER_START": str(ter["start"]),
+        "TER_GOAL": str(ter["goal"]),
         "TER_DIST_KM": _fmt(float(ter["route_distance_m"]) / 1000.0, 2),
         "TER_STEPS": str(ter["route_steps"]),
         "TER_COST": _fmt(float(ter["route_cost"]), 1),
         "TER_MEAN_COVER": _fmt(float(ter["mean_cover"]), 3),
+        "TER_AUDIT_MEAN_COVER": _fmt(float(ter["audit_mean_cover"]), 3),
         "TER_MIN_COVER": _fmt(float(ter["min_cover"]), 3),
         "TER_MIN_COVER_INDEX": str(ter["min_cover_index"]),
         "TER_COVER_POINTS": str(ter["cover_points"]),

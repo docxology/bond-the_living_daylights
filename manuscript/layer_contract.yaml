@@ -7,6 +7,9 @@ layers:
     description: "Mathematical / domain logic — infrastructure-free, no bond_api"
     modules:
       - src/the_living_daylights/ballistics.py
+      - src/the_living_daylights/optics.py
+      - src/the_living_daylights/countersniper.py
+      - src/the_living_daylights/visibility.py
       - src/the_living_daylights/defection_protocol.py
       - src/the_living_daylights/terrain_ops.py
       - src/the_living_daylights/compute_mission.py
@@ -19,7 +22,7 @@ layers:
       - infrastructure
 
   adapter:
-    description: "Misson adapter — the only bond_api integration seam"
+    description: "Mission adapter — the only bond_api integration seam"
     modules:
       - src/the_living_daylights/mission.py
     allowed_imports:

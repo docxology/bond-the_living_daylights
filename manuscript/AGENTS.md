@@ -1,128 +1,134 @@
 ---
 title: "Manuscript directory: the_living_daylights"
 type: "manuscript_guide"
-version: "2.5.2"
+version: "0.1.0"
 ---
 
-# Manuscript (`projects/working/bond/the_living_daylights/manuscript/`)
+# Manuscript (`the_living_daylights/manuscript/`)
 
-Repository-wide agent rules for this exemplar live in [`../docs/agent_instructions.md`](../docs/agent_instructions.md). This file covers **manuscript-specific** editing: file roles, `{{VARIABLE}}` token protocol, figure protocol, and the section modification workflow.
+Package-wide agent rules live in
+[`../docs/agent_instructions.md`](../docs/agent_instructions.md). This file
+covers **manuscript-specific** editing: what each file is, the token protocol,
+the figure protocol, and the workflow for changing a section.
 
-## File Inventory
+## File inventory
 
-| File / Pattern | Role | `{{VARIABLE}}` Tokens | Figure References |
+| File | Role | Token families | Figures |
 |---|---|---|---|
-| `00_abstract.md` | Abstract; introduces template features and results summary | `CONFIG_KEYWORDS`, `CONFIG_MAX_ITERATIONS`, `CONFIG_MAX_STEP_SIZE`, `CONFIG_MIN_STEP_SIZE`, `CONFIG_NUM_STEP_SIZES`, `RESULT_NUM_CONVERGED`, `RESULT_OPTIMUM_F`, `RESULT_OPTIMUM_X` | None |
-| `01_introduction.md` | Infrastructure pillars, algorithm overview, reader's guide | None | None |
-| `02_methodology.md` | Mathematical methods, gradient descent algorithm, step-size theory | `CONFIG_STEP_SIZES_BULLETS` | None |
-| `03_results.md` | All results; ALL figures; ALL numeric result tokens | `CONFIG_BENCHMARK_DIMS`, `CONFIG_CONVERGENCE_TOL`, `CONFIG_MAX_ITERATIONS`, `CONFIG_MAX_STEP_SIZE`, `CONFIG_MIN_STEP_SIZE`, `CONFIG_NUM_STABILITY_STARTS`, `CONFIG_NUM_STABILITY_STEPS`, `CONFIG_NUM_STEP_SIZES`, `CONFIG_STABILITY_CELLS`, `CONFIG_STABILITY_MAX_STEP`, `CONFIG_STABILITY_MIN_STEP`, `CONFIG_STEP_SIZES_CSV`, `CONFIG_TOLERANCE`, `RESULT_AVG_ITERATIONS`, `RESULT_BEST_STEP_SIZE`, `RESULT_CONVERGENCE_FACTORS`, `RESULT_MAX_ITERATIONS`, `RESULT_MIN_ITERATIONS`, `RESULT_NUM_CONVERGED`, `RESULT_OPTIMUM_F`, `RESULT_OPTIMUM_X`, `RESULT_TABLE_ROWS`, `STABILITY_SCORE`` | All 6 figures |
-| `04_conclusion.md` | Summary of pipeline automation and template guarantees | None | None |
-| `05_experimental_setup.md` | Configuration parameters, software environment | `CONFIG_BENCHMARK_DIMS`, `CONFIG_BENCHMARK_MAX_DIM`, `CONFIG_BENCHMARK_MIN_DIM`, `CONFIG_CONVERGENCE_TOL`, `CONFIG_INITIAL_POINT`, `CONFIG_MAX_ITERATIONS`, `CONFIG_NUM_STABILITY_STARTS`, `CONFIG_NUM_STABILITY_STEPS`, `CONFIG_NUM_STEP_SIZES`, `CONFIG_QUADRATIC_A`, `CONFIG_QUADRATIC_B`, `CONFIG_STABILITY_CELLS`, `CONFIG_STEP_SIZES_BULLETS`, `GENERATION_TIMESTAMP`, `NUMPY_VERSION`, `PLATFORM`, `PYTHON_VERSION`, `RESULT_OPTIMUM_F`, `RESULT_OPTIMUM_X`, `STABILITY_FUNCTION`` | None |
-| `06_reproducibility.md` | Config hash, artifact inventory, test results | `ARTIFACT_DATA_FILES`, `ARTIFACT_FIGURES`, `ARTIFACT_REPORTS`, `ARTIFACT_TOTAL`, `CONFIG_FIRST_AUTHOR`, `CONFIG_HASH`, `CONFIG_KEYWORDS`, `CONFIG_NUM_STABILITY_STARTS`, `CONFIG_NUM_STABILITY_STEPS`, `CONFIG_NUM_STEP_SIZES`, `CONFIG_STABILITY_CELLS`, `CONFIG_VERSION`, `RESULT_ALL_CONVERGED`, `RESULT_AVG_ITERATIONS`, `RESULT_BEST_STEP_SIZE`, `RESULT_CONVERGED_STEP_SIZES`, `RESULT_DIVERGED_STEP_SIZES`, `RESULT_MAX_ITERATIONS`, `RESULT_MIN_ITERATIONS`, `RESULT_NUM_CONVERGED`, `RESULT_WORST_STEP_SIZE`, `STABILITY_SCORE`` | None |
-| `07_scope_and_related_work.md` | Scope limitations, related literature | None | None |
-| `config.yaml` | Paper metadata, experiment parameters, `publication.transmission_bookends`, `publication.deposit_filename`, `steganography` profile | — | — |
-| `config.yaml.example` | Reference copy for new projects; shows all configurable fields | — | — |
-| `preamble.md` | LaTeX injections shared by PDF output | — | — |
-| `references.bib` | BibTeX bibliography | — | — |
-| `SYNTAX.md` | Citation, figure, and cross-reference syntax reference | — | — |
-| `README.md` | Human quick-reference for this directory | — | — |
-| `AGENTS.md` | This file — agent technical directives | — | — |
+| `00_abstract.md` | Abstract — the six concepts and their headline results | Ballistics, cello case, optics, countersniper, defection, verification, terrain, overwatch | None |
+| `01_introduction.md` | The film as spec, the module inventory, protocol integration, reader's guide | `CODENAME` | None |
+| `02_methodology.md` | Module-by-module derivation of every algorithm | All families; cites every bibliography key | None |
+| `03_results.md` | The computed mission solution; **all four figures live here** | All result families | `fig:ballistics`, `fig:terrain`, `fig:glint`, `fig:overwatch` |
+| `04_conclusion.md` | What was shown, and how the anti-drift guarantees are enforced | None | None |
+| `05_experimental_setup.md` | Parameter tables by subsystem + software environment | Parameter tokens, `PYTHON_VERSION`, `GENERATION_TIMESTAMP` | None |
+| `06_reproducibility.md` | Determinism argument, artifact inventory, the verification gate | `TER_SEED`, `GENERATION_TIMESTAMP` | None |
+| `07_scope_and_related_work.md` | Explicit non-claims, related work, intended use | None | None |
+| `99_references.md` | Annotated reference list grouped by what each source backs | `VERSION` | None |
+| `config.yaml` | Paper identity, authors, keywords, and a reader-facing `mission:` echo of `settings.py` | — | — |
+| `references.bib` | BibTeX records — real, checkable sources only | — | — |
+| `preamble.md` | LaTeX packages injected at PDF render time | — | — |
+| `layer_contract.yaml` | Declarative layer contract (which module may import what) | — | — |
+| `SYNTAX.md` | Pandoc syntax plus the live token, citation, and figure registries | — | — |
+| `README.md` | Human quick reference for this directory | — | — |
+| `AGENTS.md` | This file | — | — |
 
-## {{VARIABLE}} Protocol
+Only `[0-9][0-9]_*.md` files are hydrated and rendered. Everything else here is
+a sidecar and is never treated as prose.
 
-Numeric values that come from analysis outputs **must** use `{{VARIABLE_NAME}}` syntax. Hardcoding a number that will change when `config.yaml` is edited or the analysis is re-run is the primary cause of inaccurate manuscripts.
+## Token protocol
 
-**The token pipeline**:
-1. `scripts/z_generate_manuscript_variables.py` calls `src/manuscript_variables.py::generate_variables()` to compute all token values
-2. `generate_variables()` reads experiment parameters via `src/experiment_config.py::load_experiment_config()` (same loader as analysis, figures, and dashboard)
-3. The script writes the full `{TOKEN: value}` mapping to `output/data/manuscript_variables.json`
-4. It calls `infrastructure.rendering.manuscript_injection.write_resolved_manuscript_tree()` which copies each `manuscript/*.md` template to `output/manuscript/*.md`, substituting every `{{TOKEN}}` with its resolved value
-5. `scripts/pipeline/stage_03_render.py` renders the **substituted** copies (from `output/manuscript/`), not the originals
+**Never hardcode a number in prose.** A hardcoded value is wrong the moment
+`settings.py` changes or the solution is recomputed, and nothing will tell you.
 
-**Adding a new token**:
-1. Add a key/value pair to the `variables` dict in `src/manuscript_variables.py::generate_variables()`
-2. Add a corresponding assertion in `tests/test_manuscript_variables.py` (the live cross-reference test `test_all_manuscript_tokens_are_generated` will fail automatically if a manuscript token is missing)
-3. Verify: `python -c "import json; d=json.load(open('projects/working/bond/the_living_daylights/output/data/manuscript_variables.json')); print(d['MY_TOKEN'])"`
-4. Reference in a manuscript file as `{{MY_TOKEN}}`
+Every metric is a brace-delimited token resolved by
+[`../src/the_living_daylights/manuscript_variables.py`](../src/the_living_daylights/manuscript_variables.py)'s
+`generate_variables()`, which reads `config.yaml` plus
+[`../src/the_living_daylights/compute_mission.py`](../src/the_living_daylights/compute_mission.py)'s
+`mission_solution()` — the single place any number in this package is computed.
 
-**Detecting unresolved tokens** (run before rendering):
+Adding a token:
+
+1. Expose the value from `mission_solution()`. A new top-level section also has
+   to be listed in `manuscript_variables.REQUIRED_SOLUTION_SECTIONS`, or the
+   hydration gate will not protect it.
+2. Add the key to the `variables` dict in `generate_variables()`.
+3. Cite it in a section and register its family in [`SYNTAX.md`](SYNTAX.md).
+4. `tests/test_manuscript_variables.py::test_all_manuscript_tokens_are_generated`
+   fails automatically if prose cites a token the code does not produce — there
+   is no separate step to remember.
+
+Checking for unresolved tokens after hydration:
+
 ```bash
-grep -r "{{" projects/working/bond/the_living_daylights/output/manuscript/ 2>/dev/null \
-  && echo "UNRESOLVED TOKENS — re-run z_generate_manuscript_variables.py" \
-  || echo "All tokens resolved"
+uv run python scripts/z_generate_manuscript_variables.py   # strict: raises on any leftover
+grep -r "{{" output/manuscript/ && echo "UNRESOLVED" || echo "clean"
 ```
 
-See [`../docs/syntax_guide.md`](../docs/syntax_guide.md) for an illustrative token reference table — it is a subset that may lag behind the code, per that file's own disclaimer. The authoritative source of truth is the return value of `src/manuscript_variables.py::generate_variables()`; the live cross-reference test `tests/test_manuscript_variables.py::test_all_manuscript_tokens_are_generated` is what actually gates completeness.
+Note: prose that needs to *mention* a placeholder must not write literal double
+braces — strict resolution rejects the section. Describe it in words.
 
-## Figure Protocol
+## Parameters live in two places, and they are pinned
 
-All six figures must be referenced via Pandoc-crossref `[@fig:label]`, never with hardcoded numbers or raw `\ref{}`:
+`../src/the_living_daylights/settings.py` is authoritative. The `mission:` block
+in `config.yaml` is a **reader-facing echo** so someone reading the paper can
+see the parameters without opening the code; nothing reads it at runtime.
 
-| Label | PNG Filename | Generator in `src/figures/` (orchestrated via `src/analysis/` / `scripts/optimization_analysis.py`) |
-|---|---|---|
-| `{#fig:convergence}` | `output/figures/convergence_plot.png` | `generate_convergence_plot()` |
-| `{#fig:step_sensitivity}` | `output/figures/step_size_sensitivity.png` | `generate_step_size_sensitivity_plot()` |
-| `{#fig:convergence_rate}` | `output/figures/convergence_rate_comparison.png` | `generate_convergence_rate_plot()` |
-| `{#fig:complexity}` | `output/figures/algorithm_complexity.png` | `generate_complexity_visualization()` |
-| `{#fig:benchmark}` | `output/figures/performance_benchmark.png` | `generate_benchmark_visualization()` |
-| `{#fig:stability}` | `output/figures/stability_analysis.png` | `generate_stability_visualization()` |
+`tests/test_manuscript_variables.py::test_config_mission_block_mirrors_settings`
+compares the two key for key **and** asserts the key sets match, so adding a
+parameter to one side without the other fails the suite in either direction.
 
-**To add a new figure**:
-1. Add a generator function to `src/figures/` and wire it through `src/analysis/` (script entry: `scripts/optimization_analysis.py`).
-2. In the appropriate manuscript section, add a Pandoc image line (alt, relative path under `../output/figures/`, and `{#fig:…}`) by copying the structure of any figure in `03_results.md` and updating the path to match the file your generator writes.
-3. Reference in prose: `[@fig:new_label]` (parenthetical) or `@fig:new_label` (narrative)
-4. Document in [`../docs/output_inventory.md`](../docs/output_inventory.md) regeneration table
+## Figure protocol
 
-## Infrastructure Coupling (`scripts/`, not `src/`)
+Figures are rendered by
+[`../src/the_living_daylights/figures/plots.py`](../src/the_living_daylights/figures/plots.py)
+from the same mission solution the prose reads, so a figure cannot disagree
+with the number beside it. All four are cited from `03_results.md`. Rendering
+is deterministic — the suite renders twice and compares bytes.
 
-Orchestrators under `projects/working/bond/the_living_daylights/scripts/` should use `infrastructure.core.logging.utils.get_logger(__name__)` (same pattern as `optimization_analysis.py`). Scientific checks should go through `infrastructure.scientific` helpers where applicable. `src/optimizer.py` must remain infrastructure-free.
+Add a figure by writing a `render_*_figure(output_dir)` function that takes its
+data from `mission_solution()` or the pure core, adding it to
+`render_all_figures()`, registering the label in [`SYNTAX.md`](SYNTAX.md), and
+covering it in `tests/test_figures.py`.
 
-## Section Modification Protocol
+## Bibliography
 
-Follow these steps in order whenever you change behavior and need to update the manuscript:
+Every entry in `references.bib` must be a real publication a reader can look
+up. Do not invent a citation, do not approximate a DOI, and if you are not
+confident a source exists, delete it rather than ship it — a fabricated
+citation is worse than a missing one. `99_references.md` carries the annotated
+list, grouped by what each source backs in the code.
 
-1. **Update mathematical or experimental description** in `02_methodology.md` / `05_experimental_setup.md` as needed.
-2. **Add or extend tests** — pure math in `tests/test_optimizer.py`; orchestration and error paths in `tests/test_analysis_integration.py` and `tests/test_analysis_coverage.py`.
-3. **Regenerate analysis outputs**:
-   ```bash
-   uv run python projects/working/bond/the_living_daylights/scripts/optimization_analysis.py
-   ```
-4. **Hydrate manuscript variables** (substitute `{{VARIABLE}}` tokens):
-   ```bash
-   uv run python projects/working/bond/the_living_daylights/scripts/z_generate_manuscript_variables.py
-   ```
-5. **Verify all tokens resolved**:
-   ```bash
-   grep -r "{{" projects/working/bond/the_living_daylights/output/manuscript/ || echo "All resolved"
-   ```
-6. **Render PDF** from the repository root:
-   ```bash
-   uv run python scripts/pipeline/stage_03_render.py --project templates/the_living_daylights
-   ```
-7. **Verify figures and table appear** in the rendered PDF; check `output/tex/*.log` for LaTeX errors.
+## Changing a section
 
-> **Mermaid prerequisite.** The project convention is that every diagram is
-> Mermaid (`docs/AGENTS.md`). If a manuscript section embeds a ```mermaid```
-> block, the combined-PDF render shells out to `mmdc`, which needs a pinned
-> `chrome-headless-shell` in the Puppeteer cache. Install it once
-> (`npx --yes puppeteer browsers install chrome-headless-shell`) or the
-> **PDF Rendering** stage fails while per-section slides still render. Full
-> detail: [`../docs/rendering_pipeline.md`](../docs/rendering_pipeline.md#prerequisite-mermaid-diagrams-need-chrome-headless-shell).
+1. Edit the `NN_*.md` source — never `output/manuscript/`, which is generated.
+2. If the change introduces a number, add the token first (above).
+3. If it introduces a modelling claim, verify it against the code. Two defects
+   of exactly this kind were caught in review: prose describing a `sin` term as
+   a cosine, and prose citing the ballistic-holdover token as if it were the
+   mil-dot reticle span.
+4. Re-hydrate and re-run the gates:
 
-Final deliverables appear under `output/templates/the_living_daylights/` after `scripts/pipeline/stage_05_copy.py` runs (working files remain under `projects/working/bond/the_living_daylights/output/` during the run).
+```bash
+uv run python scripts/z_generate_manuscript_variables.py
+uv run pytest tests/ --cov=src --cov-fail-under=90
+git status --short   # output/ is git-ignored; a clean tree is the determinism check
+```
 
-## RASP Conventions
+## Prose standards
 
-1. Avoid boilerplate closers such as "In summary" / "In conclusion" at the end of sections unless the section genuinely needs them.
-2. Figures and numbers in `03_results.md` must match what `scripts/optimization_analysis.py` writes (paths under `projects/working/bond/the_living_daylights/output/figures/` and related CSV/JSON).
-3. When referencing template code, prefer concrete paths or URLs (e.g. [core utilities in the template repository](https://github.com/docxology/template/tree/main/infrastructure/core)) over vague module dotted paths alone.
+- No "In summary" / "In conclusion" closers.
+- Active voice in methodology; explicit file paths when referring to code.
+- One idea per paragraph.
+- State non-claims explicitly rather than leaving scope implied —
+  `07_scope_and_related_work.md` is the model.
+- Never quote a test count or a coverage percentage. Those live only in
+  [`../docs/_generated/COUNTS.md`](../docs/_generated/COUNTS.md); prose
+  describes the gate.
 
 ## See also
 
-- [`README.md`](README.md) — Quick orientation
-- [`SYNTAX.md`](SYNTAX.md) — Pandoc syntax reference for this manuscript
-- [`../../../docs/guides/manuscript-semantics.md`](../../../../docs/guides/manuscript-semantics.md) — Repository-wide canonical manuscript semantics shared by the permanent exemplars
-- [`../docs/rendering_pipeline.md`](../docs/rendering_pipeline.md) — Manuscript → PDF flow (4 phases)
-- [`../docs/syntax_guide.md`](../docs/syntax_guide.md) — Complete `{{VARIABLE}}` token reference
-- [`../src/manuscript_variables.py`](../src/manuscript_variables.py) — Variable computation logic (`generate_variables()`)
-- [`../scripts/z_generate_manuscript_variables.py`](../scripts/z_generate_manuscript_variables.py) — Thin orchestrator that runs the above and writes output files
+- [`README.md`](README.md) — quick orientation for this directory.
+- [`SYNTAX.md`](SYNTAX.md) — Pandoc syntax and the live registries.
+- [`../docs/architecture.md`](../docs/architecture.md) — where every number comes from.
+- [`../docs/agent_instructions.md`](../docs/agent_instructions.md) — package-wide rules.
+- [`../src/the_living_daylights/manuscript_variables.py`](../src/the_living_daylights/manuscript_variables.py) — `generate_variables()`.

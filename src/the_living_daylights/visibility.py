@@ -23,8 +23,8 @@ from dataclasses import dataclass
 from the_living_daylights.terrain_ops import TerrainGrid
 
 __all__ = [
-    "EYE_HEIGHT_M",
     "CLEARANCE_M",
+    "EYE_HEIGHT_M",
     "OverwatchRanking",
     "best_overwatch",
     "elevation_gain",

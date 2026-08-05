@@ -1,34 +1,57 @@
 # docs/ — SNIPER'S NEST agent documentation
 
-Operational rulebook for agents and developers inside `the_living_daylights`.
-Every file is a hard constraint, not a suggestion.
+Rulebook for agents and developers working inside `the_living_daylights`. Every
+item below is a hard constraint, not a suggestion.
 
 | File | Purpose |
 | --- | --- |
-| `agent_instructions.md` | Behavioral rules (read first). |
-| `architecture.md` | Layer boundaries + dependency direction. |
-| `testing_philosophy.md` | Zero-mock, real-data, determinism, coverage gate. |
-| `_generated/COUNTS.md` | Live test count + achieved coverage. |
-| `README.md` | Quick navigation. |
+| [`agent_instructions.md`](agent_instructions.md) | The behavioral rules. Read first. |
+| [`architecture.md`](architecture.md) | Module-by-module architecture, dependency direction, and the frozen `MissionProvider` surface. |
+| [`testing_philosophy.md`](testing_philosophy.md) | Zero-mock doctrine, determinism proofs, the coverage gate, and the test inventory. |
+| [`README.md`](README.md) | Directory index and reading order. |
+| [`_generated/COUNTS.md`](_generated/COUNTS.md) | Live test total and achieved coverage. Regenerated, never hand-edited. |
 
 ## Key conventions
 
-- **Pure core / thin adapter.** The domain modules are infrastructure-free;
-  `mission.py` is the only `bond_api` import.
-- **Zero mocks.** No `unittest.mock` / `MagicMock` anywhere in `tests/`.
-- **Determinism.** Fixed seeds; no wall-clock in persisted artifacts.
-- **No hardcoded metrics in prose.** All numbers hydrate through
-  `manuscript_variables.generate_variables()`.
-- **No lineage.** The tree stays free of `template[_]code_project` strings.
+- **Pure core / thin adapter.** `ballistics`, `optics`, `countersniper`,
+  `visibility`, `defection_protocol`, `terrain_ops`, `settings`, and
+  `compute_mission` are infrastructure-free (stdlib + numpy). `mission.py` is
+  the *only* module that imports `bond_api`, and it holds no business logic.
+- **Frozen protocol.** `MissionProvider`'s five methods
+  (`brief`/`recon`/`plan`/`execute`/`debrief`) and the module-level `GADGETS`
+  registry are consumed across the suite by `bond-cli`, the coordinator, and
+  the orchestrator. Their public shape does not change. Deepen inside.
+- **One solution.** Every number the package reports comes from
+  `compute_mission.mission_solution()`. The mission outcome, the manuscript,
+  and the figures are all readers of that one call.
+- **Zero mocks.** No `unittest.mock` / `MagicMock` / `@patch` /
+  `create_autospec` anywhere in `tests/`.
+- **Determinism.** Fixed seeds, no global RNG, no wall-clock in persisted
+  artifacts (the manuscript regeneration timestamp is the one exception, and it
+  is injectable).
+- **No hardcoded metrics in prose.** Numbers reach the manuscript only as
+  tokens from `manuscript_variables.generate_variables()`. Test counts and
+  coverage percentages live in `_generated/COUNTS.md` and are quoted nowhere
+  else — documentation describes the *gate*, not a snapshot.
+- **Parameters in two places, pinned.** `settings.py` is authoritative;
+  `manuscript/config.yaml`'s `mission:` block is a reader-facing echo, and a
+  test compares them key for key in both directions.
+- **No exemplar lineage.** The tree carries zero `template[_]code_project`
+  strings; the fork contract lives in `STANDALONE.md`.
+- **Local-only.** No remote, never push. Commit inside this package's own git
+  repo with path-scoped commits.
 
 ## Verification
 
 ```bash
 uv sync --extra dev
 uv run pytest tests/ --cov=src --cov-fail-under=90
-uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
+uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/ scripts/
-rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' || echo Clean
+grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo "no mocks"
+rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' || echo "no lineage"
+git status --short   # must be clean after a path-scoped commit
 ```
 
-Live counts: [`_generated/COUNTS.md`](_generated/COUNTS.md).
+Regenerate the live counts after any change to the suite:
+[`_generated/COUNTS.md`](_generated/COUNTS.md).

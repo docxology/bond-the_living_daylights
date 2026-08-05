@@ -148,8 +148,10 @@ def assess_defection(
     were already approved.
 
     Raises:
-        ValueError: if a stage repeats, thresholds are inverted, or a stage
-            name appears in an unexpected position of :data:`DEFAULT_STAGES`.
+        ValueError: if the thresholds are inverted or out of ``[0, 1]``, a
+            stage name repeats, or any stage of :data:`DEFAULT_STAGES` is
+            absent. Stage *order* is taken from ``inputs`` as supplied — the
+            protocol validates membership, not position.
     """
     if go_threshold < 0.0 or conditional_threshold < go_threshold or conditional_threshold > 1.0:
         raise ValueError("thresholds must satisfy 0 <= go_threshold <= conditional_threshold <= 1")

@@ -1,179 +1,175 @@
-# Manuscript Syntax Reference (the_living_daylights)
+# Manuscript Syntax Reference — the_living_daylights (SNIPER'S NEST)
 
-Project-specific overlay on the canonical [`docs/guides/manuscript-semantics.md`](../../../../docs/guides/manuscript-semantics.md) — read that file first; this file documents the **the_living_daylights**-specific figure registry, equation labels, and `{{TOKEN}}` table.
+The Pandoc conventions this manuscript actually uses, and the live registries of
+its figures and tokens. Everything below is checked against the files on disk;
+if you add a figure or a token, update the matching registry here.
 
-## Citation Syntax (Pandoc)
+## Token protocol (the rule that matters)
 
-```markdown
-<!-- Single citation -->
-[@knuth1997]
-
-<!-- Multiple citations -->
-[@knuth1997; @cormen2009]
-
-<!-- Citation with locator -->
-[@knuth1997, pp. 42-45]
-
-<!-- Narrative citation -->
-@knuth1997 showed that...
-```
-
-All citation keys must exist in [`references.bib`](references.bib). Pandoc with `--natbib` converts `[@key]` to the right LaTeX cite command automatically; **never** write raw `\cite{}` in Markdown.
-
-## Equation Environments
+Numbers never appear as literals in prose. Every metric is written as a
+brace-delimited token and substituted at hydration time:
 
 ```markdown
-<!-- Numbered equation with label (preferred Pandoc-crossref form) -->
-$$
-\nabla f(x) = Ax - b
-$$ {#eq:example_gradient}
-
-<!-- Equivalent LaTeX form (also recognised by pandoc-crossref) -->
-\begin{equation}
-\label{eq:example_iteration}
-x_{k+1} = x_k - \alpha \nabla f(x_k)
-\end{equation}
-
-<!-- Reference in text (these eq:example_* labels are illustrative only — the live
-     manuscript labels live in the registry table below) -->
-[@eq:example_gradient] gives the gradient; [@eq:example_iteration] is the iteration.
+The zero requires an elevation of {{BAL_ELEVATION_MRAD}} mrad.
 ```
 
-Reference equations with `[@eq:label]` (parenthetical) or `@eq:label` (narrative). **Never** use raw LaTeX `\ref` / `\eqref` macros in Markdown source — the Pandoc bracket form renders portably across PDF / HTML.
+Pipeline:
 
-### Equation label registry
+1. `scripts/z_generate_manuscript_variables.py` calls
+   `src/the_living_daylights/manuscript_variables.py::generate_variables()`.
+2. `generate_variables()` reads [`config.yaml`](config.yaml) plus the
+   deterministic solution from
+   `src/the_living_daylights/compute_mission.py::mission_solution()`, and is
+   guarded by `REQUIRED_SOLUTION_SECTIONS`.
+3. The script writes the whole mapping to
+   `output/data/manuscript_variables.json`.
+4. `resolve_manuscript_tree()` copies each `NN_*.md` into `output/manuscript/`,
+   substituting every token. In strict mode (the default) any leftover
+   placeholder raises and the run fails.
 
-| Label | Equation | Source file |
+**Adding a token**
+
+1. Expose the value from `mission_solution()` (a new top-level section must also
+   be added to `REQUIRED_SOLUTION_SECTIONS`).
+2. Add the key to the `variables` dict in `generate_variables()`.
+3. Cite it in a section. `tests/test_manuscript_variables.py::test_all_manuscript_tokens_are_generated`
+   fails automatically if a section cites a token the code does not produce.
+4. Check it: `uv run python -c "import json;print(json.load(open('output/data/manuscript_variables.json'))['MY_TOKEN'])"`
+
+**Gotcha.** Prose that needs to *talk about* a placeholder must not write
+literal double braces — strict resolution treats them as unresolved tokens and
+fails the section. Describe them in words instead.
+
+### Token families
+
+| Prefix | Source section of the mission solution | Examples |
 |---|---|---|
-| `{#eq:optimization_problem}` | $\min_x f(x)$ | `01_introduction.md` |
-| `{#eq:gradient_descent_update}` | $x_{k+1} = x_k - \alpha \nabla f(x_k)$ | `01_introduction.md` |
-| `{#eq:convergence_factor}` | $\rho = |\lambda_{\max}-\alpha\lambda_{\min}| / |\lambda_{\min}+\alpha\lambda_{\max}|$ | `02_methodology.md` |
-| `{#eq:scalar_linear_update}` | $x_{k+1}-x^\ast = (1-\alpha)(x_k-x^\ast)$ | `03_results.md` |
-| `{#eq:convergence_bound}` | Per-iteration objective bound | `03_results.md` |
-| `{#eq:error_bound}` | Iterate-error contraction | `03_results.md` |
-| `{#eq:iteration_complexity}` | $k \geq \log\epsilon / \log\rho$ | `03_results.md` |
-| `{#eq:quadratic_objective}` | $f(x) = \tfrac12 x^T A x - b^T x$ | `05_experimental_setup.md` |
+| `BAL_` | `ballistics` | `BAL_ELEVATION_MRAD`, `BAL_NEAR_ZERO`, `BAL_WIND_HOLD_MRAD` |
+| `ROE_` | `rules_of_engagement` | `ROE_CELLIST_MODE`, `ROE_SENTINEL_REASON` |
+| `OPT_` | `optics` (+ scope settings) | `OPT_MIL_RANGE_M`, `OPT_ELEVATION_CLICKS`, `OPT_PARALLAX_MM` |
+| `CS_` | `countersniper` | `CS_GLINT_SNR`, `CS_CRACK_BANG_M`, `CS_TRI_RESIDUAL_M` |
+| `OW_` | `overwatch` | `OW_BEST_CELL`, `OW_VISIBLE_FRACTION`, `OW_MAX_RANGE_CELLS` |
+| `VER_` | `verification` | `VER_CERTAINTY`, `VER_VERDICT`, `VER_CHECK_LABELS` |
+| `CELL_` | `cello_case` | `CELL_LANES`, `CELL_PACKED_LENGTH_M`, `CELL_CASE_L_M` |
+| `DEF_` | `defection` | `DEF_PLAN_VERDICT`, `DEF_GATE`, `DEF_STAGE_NAMES` |
+| `TER_` | `terrain` | `TER_DIST_KM`, `TER_MEAN_COVER`, `TER_AUDIT_MEAN_COVER` |
+| (identity / env) | `config.yaml`, `settings.py`, platform | `TITLE`, `CODENAME`, `VERSION`, `CONFIG_KEYWORDS`, `PYTHON_VERSION`, `GENERATION_TIMESTAMP` |
 
-## Figure References
+The authoritative list is the `variables` dict in `manuscript_variables.py`; the
+hydrated snapshot is `output/data/manuscript_variables.json`.
+
+## Citation syntax (Pandoc)
 
 ```markdown
-<!-- Figure with label -->
-![Convergence plot showing objective value vs iteration](../output/figures/convergence_plot.png){#fig:convergence width=80%}
-
-<!-- Reference in text -->
-[@fig:convergence] demonstrates...
+[@fm2310sniper]                              <!-- single -->
+[@duckworth1996counter; @ledeczi2005countersniper]   <!-- multiple -->
+[@mccoy1999, pp. 42-45]                      <!-- with locator -->
+@dijkstra1959 showed that...                 <!-- narrative -->
 ```
 
-- Images must exist in `output/figures/` at render time
-- Use `width=` or `height=` to control sizing (prevents float-too-large warnings)
-- Captions are self-contained — they appear in the PDF and as alt text in HTML
+Every key must exist in [`references.bib`](references.bib). Never write raw
+`\cite{}` in Markdown. The full annotated list is in
+[`99_references.md`](99_references.md).
+
+### Citation key registry
+
+| Key | Backs |
+|---|---|
+| `mccoy1999` | Point-mass drag model, `ballistics.py` |
+| `fm2310sniper` | Mil-dot ranging doctrine, `optics.py` |
+| `duckworth1996counter`, `ledeczi2005countersniper` | Acoustic shooter localization, `countersniper.py` |
+| `vantrees1968` | Signal-detection formulation for `glint_detection_probability` |
+| `astmg173` | Reference solar irradiance in the glint energy budget |
+| `kinsler2000` | Temperature-dependent speed of sound |
+| `bresenham1965` | Integer cell walk in `visibility.line_of_sight` |
+| `fisher1996viewshed` | Viewshed methodology |
+| `dijkstra1959` | Least-cost routing in `terrain_ops.plan_route` |
+| `friedman2026sniper`, `bondapi2026` | This package and the frozen suite protocol |
+
+## Figure references
+
+```markdown
+![Zeroed ballistic trajectory and crosswind drift](../output/figures/ballistics_trajectory.png){#fig:ballistics}
+
+Figure [@fig:ballistics] shows the zeroed trajectory.
+```
+
+Images must exist under `output/figures/` at render time — run
+`scripts/z_generate_manuscript_variables.py` first. Captions are self-contained:
+they become the PDF caption and the HTML alt text.
 
 ### Figure label registry
 
-| Label | PNG filename | Generator in `src/figures/` (orchestrated via `src/analysis/` / `scripts/optimization_analysis.py`) |
-|---|---|---|
-| `{#fig:convergence}` | `output/figures/convergence_plot.png` | `generate_convergence_plot()` |
-| `{#fig:step_sensitivity}` | `output/figures/step_size_sensitivity.png` | `generate_step_size_sensitivity_plot()` |
-| `{#fig:convergence_rate}` | `output/figures/convergence_rate_comparison.png` | `generate_convergence_rate_plot()` |
-| `{#fig:complexity}` | `output/figures/algorithm_complexity.png` | `generate_complexity_visualization()` |
-| `{#fig:benchmark}` | `output/figures/performance_benchmark.png` | `generate_benchmark_visualization()` |
-| `{#fig:stability}` | `output/figures/stability_analysis.png` | `generate_stability_visualization()` |
+| Label | PNG | Generator in `src/the_living_daylights/figures/plots.py` | Cited in |
+|---|---|---|---|
+| `{#fig:ballistics}` | `output/figures/ballistics_trajectory.png` | `render_ballistics_figure()` | `03_results.md` |
+| `{#fig:terrain}` | `output/figures/terrain_exfil_route.png` | `render_terrain_figure()` | `03_results.md` |
+| `{#fig:glint}` | `output/figures/glint_detection.png` | `render_glint_figure()` | `03_results.md` |
+| `{#fig:overwatch}` | `output/figures/overwatch_nests.png` | `render_overwatch_figure()` | `03_results.md` |
 
-## Table References
+`render_all_figures()` renders all four. There are currently **no** numbered
+equation labels, table labels, or section labels in this manuscript; if you add
+one, use the Pandoc bracket form (`[@eq:label]`, `[@tbl:label]`,
+`[@sec:label]`) and register it here. Never use raw LaTeX `\ref` / `\eqref`.
 
-```markdown
-| Step Size | Iterations | Converged |
-|-----------|-----------|-----------|
-| 0.01      | 412       | Yes       |
+## Section order
 
-: Performance comparison across step sizes {#tbl:performance}
-
-<!-- Reference in text -->
-[@tbl:performance] shows...
+```text
+00_abstract.md                → Abstract
+01_introduction.md            → Introduction
+02_methodology.md             → Methodology
+03_results.md                 → Results
+04_conclusion.md              → Conclusion
+05_experimental_setup.md      → Experimental setup
+06_reproducibility.md         → Reproducibility
+07_scope_and_related_work.md  → Scope and related work
+99_references.md              → References
 ```
 
-### Table label registry
+Sections are assembled in lexicographic order, so `00_` puts the abstract first
+and `99_` puts the references last. `resolve_manuscript_tree()` processes
+exactly the `[0-9][0-9]_*.md` glob — sidecars like this file, `README.md`,
+`AGENTS.md`, `preamble.md`, and `layer_contract.yaml` are never hydrated or
+rendered as prose.
 
-| Label | Caption summary | Source file |
-|---|---|---|
-| `{#tbl:opt_results}` | Per-step-size convergence outcomes | `03_results.md` |
+## Preamble
 
-## Section Labels
+[`preamble.md`](preamble.md) holds the LaTeX packages injected at PDF render
+time. Do not duplicate a package that is already there, and remember that
+tolerance/hfuzz changes affect line-breaking across the whole document.
 
-Every H1 in this manuscript carries a `{#sec:<name>}` label so cross-section references (`[@sec:methodology]`) survive reordering:
-
-| File | Section H1 | Label |
-|---|---|---|
-| `00_abstract.md` | Abstract | `{#sec:abstract}` |
-| `01_introduction.md` | Introduction | `{#sec:introduction}` |
-| `02_methodology.md` | Methodology | `{#sec:methodology}` |
-| `03_results.md` | Results | `{#sec:results}` |
-| `04_conclusion.md` | Conclusion | `{#sec:conclusion}` |
-| `05_experimental_setup.md` | Experimental Setup | `{#sec:experimental_setup}` |
-| `06_reproducibility.md` | Reproducibility Certification | `{#sec:reproducibility}` |
-| `07_scope_and_related_work.md` | Scope, Related Work, and Positioning | `{#sec:scope}` |
-| `99_references.md` | References | `{#sec:references}` |
-
-## Preamble Injection
-
-[`preamble.md`](preamble.md) contains the LaTeX packages that Pandoc consumes via `infrastructure.rendering.latex_utils`:
-
-```markdown
----
-header-includes:
-  - \usepackage{amsmath}
-  - \usepackage[capitalise,noabbrev]{cleveref}
-  - \usepackage{natbib}
----
-```
-
-- Preamble is parsed by `infrastructure/rendering/latex_utils.py`
-- Changes to tolerance/hfuzz affect line-breaking globally
-- Do **not** duplicate package imports already in the infrastructure renderer
-
-## BibTeX Entry Format
+## BibTeX entry format
 
 ```bibtex
-@article{knuth1997,
-  author  = {Donald E. Knuth},
-  title   = {The Art of Computer Programming},
-  journal = {Addison-Wesley},
-  year    = {1997},
-  volume  = {1}
+@article{dijkstra1959,
+  author  = {Dijkstra, Edsger W.},
+  title   = {A note on two problems in connexion with graphs},
+  journal = {Numerische Mathematik},
+  year    = {1959},
+  volume  = {1},
+  number  = {1},
+  pages   = {269--271},
+  doi     = {10.1007/BF01386390}
 }
 ```
 
-- Keys must be lowercase alphanumeric with optional underscores
-- Author names use `{Last, First}` or `{First Last}` format
-- All entries must have at minimum: `author`, `title`, `year`
+Keys are lowercase alphanumeric with optional underscores. Every entry carries
+at minimum `author`, `title`, and `year`. **Every entry must be a real,
+checkable publication.** If you cannot verify a source exists, delete it rather
+than ship it — a fabricated citation is worse than a missing one.
 
-## Section Numbering
+## Prose conventions
 
-```text
-00_abstract.md             → Abstract (unnumbered in PDF)
-01_introduction.md          → Section 1
-02_methodology.md           → Section 2
-03_results.md               → Section 3
-04_conclusion.md            → Section 4
-05_experimental_setup.md    → Section 5
-06_reproducibility.md       → Section 6
-07_scope_and_related_work.md → Section 7
-99_references.md            → References (Pandoc--natbib bibliography)
-```
+- No "In summary" / "In conclusion" openers at section ends.
+- Active voice in methodology.
+- Reference code by explicit path — `src/the_living_daylights/optics.py`, not
+  "the optics module".
+- One idea per paragraph.
+- No metric typed as a literal. Ever.
 
-Files are assembled in lexicographic order by `infrastructure/rendering/pdf_renderer.py`. The `00_` prefix ensures the abstract renders first; `99_` ensures the references come last.
+## See also
 
-## Prose Conventions
-
-- No "In summary" or "In conclusion" at section ends (RASP standard)
-- Use active voice for methodology descriptions
-- Use explicit file paths when referencing code: `src/optimizer.py`, not "the optimizer module"
-- Keep paragraphs focused — one idea per paragraph
-
-## See Also
-
-- [`../../../docs/guides/manuscript-semantics.md`](../../../../docs/guides/manuscript-semantics.md) — Repository-wide canonical semantics
-- [`AGENTS.md`](AGENTS.md) — RASP protocol and AI agent constraints
-- [`../docs/rendering_pipeline.md`](../docs/rendering_pipeline.md) — Full rendering flow
-- [`../docs/syntax_guide.md`](../docs/syntax_guide.md) — Complete `{{VARIABLE}}` token reference
-- [`preamble.md`](preamble.md) — Active LaTeX preamble
+- [`README.md`](README.md) — what each file in this directory is for.
+- [`AGENTS.md`](AGENTS.md) — agent directives for editing the manuscript.
+- [`../docs/architecture.md`](../docs/architecture.md) — where the numbers come from.
+- [`../docs/agent_instructions.md`](../docs/agent_instructions.md) — the package-wide rules.

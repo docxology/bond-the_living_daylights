@@ -42,3 +42,14 @@ def test_render_all(tmp_path) -> None:
     # byte-determinism: identical renders produce identical bytes
     again = render_all_figures(tmp_path)
     assert [p.read_bytes() for p in paths] == [p.read_bytes() for p in again]
+
+
+def test_default_output_dir_is_the_package_output_tree() -> None:
+    """The no-argument default resolves to the package's git-ignored output/figures."""
+    from the_living_daylights.figures import plots
+
+    default = plots._output_dir()
+    assert default.name == "figures"
+    assert default.parent.name == "output"
+    # it must sit inside this package, not the caller's cwd
+    assert (default.parent.parent / "src" / "the_living_daylights").is_dir()

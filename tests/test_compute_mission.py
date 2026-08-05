@@ -53,6 +53,14 @@ def test_wind_sensitivity() -> None:
 
 
 def test_cover_weight_raises_mean_cover() -> None:
+    """A heavier exposure penalty must strictly buy concealment.
+
+    Asserted with ``>`` rather than ``>=`` so the check cannot pass if
+    ``cover_weight`` stopped reaching the route planner at all.
+    """
     base = float(mission_solution(cover_weight=1.0)["terrain"]["mean_cover"])
     covered = float(mission_solution(cover_weight=8.0)["terrain"]["mean_cover"])
-    assert covered >= base
+    assert covered > base
+    assert float(mission_solution(cover_weight=8.0)["terrain"]["route_cost"]) > float(
+        mission_solution(cover_weight=1.0)["terrain"]["route_cost"]
+    )

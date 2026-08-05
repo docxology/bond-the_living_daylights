@@ -6,7 +6,7 @@
 paper:
   # RASP Standard: Title must be descriptive and objective
   title: "The Living Daylights: SNIPER'S NEST — Special-Agent Mission Software"
-  subtitle: "Sniper Ballistics, Staged Defection Handling, and Mountain/Desert Terrain Operations"
+  subtitle: "Sniper Ballistics, Countersniper Optics and Detection, Terrain Visibility, Staged Defection Handling, and Mountain/Desert Terrain Operations"
   version: "0.1.0"
   date: "2026-08-04"
 
@@ -28,7 +28,17 @@ keywords:
   - "rifle zero"
   - "windage"
   - "rules of engagement"
+  - "riflescope optics"
+  - "mil-dot ranging"
+  - "countersniper detection"
+  - "optic glint radiometry"
+  - "acoustic crack-bang ranging"
+  - "bearing triangulation"
+  - "terrain visibility"
+  - "viewshed"
+  - "overwatch selection"
   - "defection protocol"
+  - "evidence verification"
   - "risk scoring"
   - "terrain operations"
   - "cover planning"
@@ -38,14 +48,32 @@ metadata:
   license: "MIT"
   language: "en"
 
-# Mission parameters — the single authoritative source for the domain modules.
+# Mission parameters — a READER-FACING ECHO of src/the_living_daylights/settings.py,
+# which is the single authoritative source consumed by the domain modules. This
+# block is not read by generate_variables(); it exists so a reader of the
+# manuscript can see the parameters without opening the code. It cannot drift
+# silently: tests/test_manuscript_variables.py::test_config_mission_block_mirrors_settings
+# asserts every key here equals its settings.py counterpart.
 mission:
   film: "the_living_daylights"
   codename: "SNIPER'S NEST"
   muzzle_velocity_mps: 790.0
   zero_range_m: 300.0
+  target_range_m: 300.0
   sight_height_m: 0.07
   wind_mps: 5.0
+  scope_magnification: 10.0
+  scope_objective_mm: 50.0
+  mil_reading_mils: 6.0
+  target_size_m: 1.8
+  parallax_focus_m: 150.0
+  sun_elevation_deg: 35.0
+  lens_reflectivity: 0.35
+  glint_range_m: 800.0
+  air_temp_c: 20.0
+  crack_bang_delay_s: 2.0
+  overwatch_candidate_step: 3
+  overwatch_max_range_cells: 12
   defection_go_threshold: 0.40
   defection_conditional_threshold: 0.70
   terrain_seed: 7

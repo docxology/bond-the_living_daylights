@@ -200,6 +200,10 @@ def mission_solution(
             "fits": case_fits,
             "lanes_used": case_layout.get("lanes_used", 0),
             "packing_efficiency": case_layout.get("efficiency", 0.0),
+            "packed_length_m": case_layout.get("packed_length_m", 0.0),
+            "interior_length_m": settings.CELLO_CASE.interior_length_m,
+            "interior_width_m": settings.CELLO_CASE.interior_width_m,
+            "interior_depth_m": settings.CELLO_CASE.interior_depth_m,
             "assembly_time_s": assembly_s,
         },
         "defection": {

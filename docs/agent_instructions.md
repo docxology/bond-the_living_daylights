@@ -1,49 +1,113 @@
 # SNIPER'S NEST — Agent Instructions
 
-Behavioral rules for AI agents working inside this package. These are hard
-constraints, not suggestions. Read this file before modifying anything.
+Operational instructions for anyone — human or agent — modifying
+`the_living_daylights`. These are hard constraints. Read this file before
+touching anything.
 
 ## Hard rules
 
-1. **Scope = this package only.** Work inside
-   `projects/working/bond/the_living_daylights/` exclusively. Never touch
-   sibling packages, bond root files, or the template repo.
-2. **Local-only.** There is no remote; never push. Commit inside this package's
-   own git repo with path-scoped commits.
-3. **Pure domain core.** `ballistics.py`, `defection_protocol.py`,
-   `terrain_ops.py`, `compute_mission.py`, `settings.py` are
-   infrastructure-free and importable without `bond_api`. Only `mission.py`
-   imports `bond_api` (the frozen protocol adapter).
-4. **Zero mocks.** No `unittest.mock`, `MagicMock`, `@patch`, or
-   `create_autospec` anywhere in `tests/`. Tests use real data and real
+1. **Scope is this package only.** Work inside
+   `projects/working/bond/the_living_daylights/` exclusively. Never touch a
+   sibling BOND package, the bond suite root files, or the template repository.
+2. **Local-only.** There is no git remote and never will be. Never push. Commit
+   inside this package's own repository, path-scoped.
+3. **Keep the core pure.** `ballistics.py`, `optics.py`, `countersniper.py`,
+   `visibility.py`, `defection_protocol.py`, `terrain_ops.py`, `settings.py`,
+   and `compute_mission.py` import stdlib and numpy only. They must remain
+   importable with `bond_api` absent from the environment. Only `mission.py`
+   imports `bond_api`.
+4. **Do not change the frozen protocol.** `mission.MissionProvider` must keep
+   exposing exactly `brief`, `recon`, `plan`, `execute`, `debrief` with their
+   current signatures, its `film` attribute, and the module-level `GADGETS`
+   registry plus `register_gadgets(registry)`. `bond-cli`, the coordinator's
+   reconcile pass, and the orchestrator consume these across every package.
+   Add depth *inside* the package; never rename or re-signature the surface.
+5. **Zero mocks.** No `unittest.mock`, `MagicMock`, `@patch`,
+   `create_autospec`, or `mocker.patch` anywhere in `tests/`. Real data, real
    computation, deterministically.
-5. **Frozen protocol.** `mission.py` implements the BOND-API `MissionProvider`
-   contract exactly. Do not invent or change protocol types.
-6. **No hardcoded metrics in prose.** Every number in the manuscript flows
-   through `compute_mission.mission_solution()` and
-   `manuscript_variables.generate_variables()` as a `{{TOKEN}}`.
-7. **Deterministic.** Fixed seeds; no wall-clock in persisted artifacts except
-   the regeneration timestamp.
-8. **Thin scripts.** Business logic lives in `src/`; `scripts/` are thin
-   per-phase CLIs with a `sys.path` bootstrap.
+6. **One source of numbers.** Anything the package reports must come from
+   `compute_mission.mission_solution()`. Do not compute a metric in
+   `mission.py`, in a script, in a figure, or in the manuscript.
+7. **No hand-authored metrics in prose.** Every number in
+   `manuscript/NN_*.md` is a token produced by
+   `manuscript_variables.generate_variables()`. Do not quote a test count or a
+   coverage percentage anywhere except `docs/_generated/COUNTS.md`; describe
+   the gate instead.
+8. **Deterministic.** Fixed seeds, no global RNG, no wall-clock in a persisted
+   artifact. `Provenance.wall_time_s` stays 0.0 so outcomes compare across runs.
+9. **Thin scripts.** Business logic lives in `src/`. `scripts/` files are
+   per-phase CLIs with a `sys.path` bootstrap, argument parsing, a call into
+   `src/`, and printing. Nothing else.
+10. **Type hints and docstrings** on every public function, with units stated.
+    `mypy` runs on `src/` and `scripts/` and must stay clean.
+11. **No exemplar lineage.** The tree currently carries zero
+    `template_code_project` strings and must stay that way; the fork contract
+    is described in `STANDALONE.md` without naming the exemplar.
 
-## Verification checklist (run before submitting)
+## Common tasks
+
+### Add a domain concept
+
+1. Pure logic into the matching `src/the_living_daylights/*.py` (or a new
+   module if it is genuinely a new concept).
+2. Parameters into `settings.py` **and** the `mission:` echo in
+   `manuscript/config.yaml` — the mirror test fails until both are updated.
+3. Expose the results through `compute_mission.mission_solution()`. A new
+   top-level section must also be added to
+   `manuscript_variables.REQUIRED_SOLUTION_SECTIONS`.
+4. Add a token in `generate_variables()` and cite the token in the manuscript.
+5. Add real-data tests covering happy path, boundaries, and every `raise`.
+6. Run the gates; regenerate `docs/_generated/COUNTS.md`.
+
+### Add a gadget
+
+Extend the mapping inside `register_gadgets()` in `mission.py`. Do not change
+the function's signature, and do not replace the module-level `GADGETS`
+instance — the coordinator inspects it by identity at import time.
+
+### Regenerate the manuscript and figures
+
+```bash
+uv run python scripts/z_generate_manuscript_variables.py
+```
+
+This resolves all sections into `output/manuscript/`, writes the token map to
+`output/data/manuscript_variables.json`, and renders four figures into
+`output/figures/`. Strict mode fails on any leftover placeholder. `output/` is
+git-ignored, so a rerun must leave `git status` clean — that is a live
+determinism check.
+
+Note: prose that needs to *mention* a placeholder must not write literal double
+braces, or strict resolution will reject the section. Describe it in words.
+
+### Regenerate the live counts
+
+Run the coverage gate, read the real numbers off the run, and write them into
+`docs/_generated/COUNTS.md`. Never estimate them, and never copy them into
+other prose.
+
+## Verification checklist (run all of it before claiming done)
 
 ```bash
 uv sync --extra dev
 uv run pytest tests/ --cov=src --cov-fail-under=90
-uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
+uv run ruff check src/ scripts/ tests/
+uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/ scripts/
-grep -r "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo Clean
-rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' || echo Clean
-git status --short   # expectations: clean after the path-scoped commit
+uv run python scripts/z_generate_manuscript_variables.py
+grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo "no mocks"
+rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' || echo "no lineage"
+git status --short   # expect clean after the path-scoped commit
 ```
 
-Live test count + coverage live in [`_generated/COUNTS.md`](_generated/COUNTS.md).
+Read the output. A command that ran is not the same as a command that passed,
+and an exit code of 0 on a pytest run that collected nothing is not a pass.
 
 ## Discoverability contract
 
-The orchestrator finds this film as the slug `the_living_daylights`:
+The orchestrator finds this film by the slug `the_living_daylights`:
 `src/the_living_daylights/mission.py` exposes a top-level `MissionProvider`
-class whose `film` attribute is `the_living_daylights`. See
-`bond_api.discovery.load_provider`.
+class whose `film` attribute is `the_living_daylights`.
+`bond_api.discovery.load_provider('the_living_daylights', …)` imports that
+module, binds `film`, and verifies the runtime-checkable protocol. Anything
+that breaks that import breaks fleet-wide discovery.

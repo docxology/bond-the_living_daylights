@@ -30,16 +30,20 @@ trigger-guard shot disables the threat without an unlawful kill (see
 
 ## The cello case
 
-The {{CELL_NUM_PARTS}}-part takedown rifle conceals in the cello case:
-packing returns `{{CELL_FITS}}` using {{CELL_LANES}} lanes at
-{{CELL_EFFICIENCY}} efficiency, with a {{CELL_ASSEMBLY_S}} s field assembly
-time (see [`ballistics.pack_cello_case`](../src/the_living_daylights/ballistics.py)).
+The {{CELL_NUM_PARTS}}-part takedown rifle ({{CELL_PART_NAMES}}) conceals in
+the {{CELL_CASE_L_M}} x {{CELL_CASE_W_M}} x {{CELL_CASE_D_M}} m case interior:
+packing returns `{{CELL_FITS}}` using {{CELL_LANES}} lanes, a longest-lane fill
+of {{CELL_PACKED_LENGTH_M}} m, and an areal efficiency of
+{{CELL_EFFICIENCY}}, with a {{CELL_ASSEMBLY_S}} s field assembly time (see
+[`ballistics.pack_cello_case`](../src/the_living_daylights/ballistics.py)).
 
 ## Defection-handling protocol
 
-The KOSKOV scenario runs through {{DEF_NUM_STAGES}} stages with a plan score of
-{{DEF_PLAN_SCORE}} and an overall verdict of **{{DEF_PLAN_VERDICT}}**, gated at
-the **{{DEF_GATE}}** stage — the point where identity doubt and backstop
+The KOSKOV scenario runs through {{DEF_NUM_STAGES}} stages
+({{DEF_STAGE_NAMES}}) with a plan score of {{DEF_PLAN_SCORE}} and an overall
+verdict of **{{DEF_PLAN_VERDICT}}** against the
+{{DEF_GO_THRESHOLD}}/{{DEF_CONDITIONAL_THRESHOLD}} thresholds, gated at the
+**{{DEF_GATE}}** stage — the point where identity doubt and backstop
 inconsistency surface. Earlier stages approve; later ones carry the plan only
 under conditions.
 
@@ -50,8 +54,10 @@ On the seeded ({{TER_SEED}}) terrain grid, the planner routes
 at a blended cost of {{TER_COST}}, with a mean route concealment of
 {{TER_MEAN_COVER}} and a worst-case (least-covered) segment of {{TER_MIN_COVER}}
 at step {{TER_MIN_COVER_INDEX}}; {{TER_COVER_POINTS}} high-cover waypoints are
-identified. Figure [@fig:terrain] maps the route and its cover points on the
-concealment field.
+identified. Run against the same path, the independent `assess_cover` audit
+reproduces the planner's concealment exactly ({{TER_AUDIT_MEAN_COVER}}), so the
+route's own summary is corroborated rather than self-reported. Figure
+[@fig:terrain] maps the route and its cover points on the concealment field.
 
 ![Planned exfil route on the concealment map](../output/figures/terrain_exfil_route.png){#fig:terrain}
 
@@ -80,10 +86,12 @@ bearings localize the hostile to ({{CS_TRI_X_M}}, {{CS_TRI_Y_M}}) m with a
 
 ## Overwatch selection
 
-The extraction site sits at {{OW_TARGET_CELL}} — the terrain's low point, in a
-near-total blind spot: of the {{OW_NUM_CANDIDATES}} in-range candidate
-positions, only {{OW_VISIBLE_CANDIDATES}} ({{OW_VISIBLE_FRACTION}} fraction)
-can see it. The ranked best nest at {{OW_BEST_CELL}} commands the site from
+The extraction site sits at {{OW_TARGET_CELL}} — the terrain's global
+elevation minimum, and therefore in a near-total blind spot. Sampling every
+{{OW_CANDIDATE_STEP}} cells and keeping only positions within
+{{OW_MAX_RANGE_CELLS}} cells leaves {{OW_NUM_CANDIDATES}} in-range candidates,
+of which only {{OW_VISIBLE_CANDIDATES}} ({{OW_VISIBLE_FRACTION}} fraction) can
+actually see the site over the intervening terrain and cover. The ranked best nest at {{OW_BEST_CELL}} commands the site from
 {{OW_BEST_DISTANCE_M}} m with {{OW_BEST_ELEV_GAIN_M}} m of elevation advantage
 and {{OW_BEST_COVER}} concealment, scoring {{OW_BEST_SCORE}} (Figure
 [@fig:overwatch]).
@@ -93,6 +101,8 @@ and {{OW_BEST_COVER}} concealment, scoring {{OW_BEST_SCORE}} (Figure
 ## Evidence verification
 
 The verify stage's backstop model accumulates {{VER_NUM_CHECKS}} weighted
-checks (identity documents, debrief consistency, backstop telegraphy, cover
-story) into a certainty of {{VER_CERTAINTY}}, rendering the verdict
-**{{VER_VERDICT}}** — consistent with the plan's {{DEF_GATE}} gate.
+checks ({{VER_CHECK_LABELS}}) into a certainty of {{VER_CERTAINTY}}, rendering
+the verdict **{{VER_VERDICT}}**. That agrees with the staged assessment's
+{{DEF_GATE}} gate while sharing none of its inputs — two independent models
+landing on the same conditional posture, which is corroboration rather than
+restatement.

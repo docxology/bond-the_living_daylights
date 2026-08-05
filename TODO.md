@@ -1,59 +1,93 @@
 # SNIPER'S NEST — TODO
 
-## Built (phase 2 + phase 4 deep improvement)
+Status of `the_living_daylights` after the phase-5 documentation and
+code-review pass. "Built" is what exists and is tested; "Open" is real
+remaining work; nothing here is aspirational.
 
-- **Pure domain core** (`src/the_living_daylights/`)
-  - `ballistics.py` — point-mass RK4 external ballistics: rifle zero,
-    near/far-zero capture, windage, rules-of-engagement (trigger-guard hold),
-    cello-case packing. Real-data tests: `tests/test_ballistics.py`.
-  - `optics.py` — countersniper scope optics: MOA/mrad click math, mil-dot
-    reticle ranging, holdover, first-order parallax, field of view. Tests:
-    `tests/test_optics.py`.
-  - `countersniper.py` — radiometric optic-glint detection, acoustic
-    crack-bang ranging, least-squares bearing triangulation. Tests:
-    `tests/test_countersniper.py`.
-  - `visibility.py` — terrain line-of-sight + viewsheds + ranked overwatch
-    (sniper's nest) selection. Tests: `tests/test_visibility.py`.
-  - `defection_protocol.py` — staged, risk-scored defection handling with
-    monotonic approval + plan gate, plus backstop **evidence verification**
-    (`EvidenceCheck`, `verification_certainty`, `backstop_verdict`). Tests:
-    `tests/test_defection_protocol.py`.
-  - `terrain_ops.py` — seeded mountain/desert grid, cover-weighted Dijkstra
-    routing, cover audit. Tests: `tests/test_terrain_ops.py`.
-  - `compute_mission.py` — single deterministic mission solution (ballistics,
-    optics, countersniper, overwatch, defection + verification, terrain) shared
-    by mission report, manuscript tokens, and provenance `input_hash`.
-  - `settings.py` — single source of mission parameters.
-  - `mission.py` — `MissionProvider` implementing the frozen BOND-API protocol
-    (brief/recon/plan/execute/debrief) with UNCHANGED public shape; registers
-    the enlarged gadget kit with `bond_api.registry.GadgetRegistry`.
-  - `manuscript_variables.py` — `{{TOKEN}}` hydration from config + solution.
-  - `figures/plots.py` — four deterministic figures (ballistics, terrain
-    route, glint, overwatch nests).
-- **Thin scripts/** — per-phase CLIs: `brief.py`, `recon.py`, `plan.py`,
-  `execute.py`, `debrief.py`, plus `00_preflight.py`, `z_generate_manuscript_variables.py`.
-- **Manuscript** — SNIPER'S NEST identity + sections, deterministic figures,
-  token-injected metrics, real bibliography (FM 23-10 mil-dot, acoustic
-  sniper-localization, viewshed, detection-theory, sound-speed sources).
-- **Gates** — `pytest --cov=src --cov-fail-under=90` green (live count in
-  `docs/_generated/COUNTS.md`); `ruff` + `mypy` clean; no mocks; deterministic;
-  `template[_]code_project` lineage zero; own git repo, path-scoped commit.
+## Built
 
-## Declared integration points
+**Pure domain core** (`src/the_living_daylights/`) — stdlib + numpy only:
 
-- **bond-api (FROZEN)** — `mission.py` implements `MissionProvider` against
-  `bond_api.protocol` and registers gadgets against `bond_api.registry`
-  (path dep wired in `pyproject.toml`). No protocol changes are permitted.
-- **bond-utilities provenance (not yet bound)** — the mission currently
-  computes its own deterministic `input_hash`. When the shared helper is
-  available, delegate outcome persistence to
-  `bond_utilities.mission_io.record_provenance_outcome` (acceptance: a
-  recorded outcome whose provenance block matches `execute()`'s Provenance).
-- **orchestrator discovery** — the package is discoverable as
-  `the_living_daylights` via `bond_api.discovery.load_provider` once `src/` is
-  on the orchestrator's path.
+| Module | Built | Tests |
+| --- | --- | --- |
+| `ballistics.py` | RK4 point-mass trajectory, rifle zero + near/far zero, drop, time of flight, crosswind drift + wind hold, rules of engagement, cello-case shelf packing, assembly time | `tests/test_ballistics.py` |
+| `optics.py` | MOA↔mrad, click value + whole-click solutions, mil-dot ranging + inverse, holdover, parallax, field of view, zero click schedule | `tests/test_optics.py` |
+| `countersniper.py` | Glint geometry / contrast / angular fraction / SNR / detection CDF, sound speed, crack-bang delay + range, least-squares bearing triangulation with residual | `tests/test_countersniper.py` |
+| `visibility.py` | Bresenham line of sight with clearance and first blocker, viewsheds, weighted overwatch ranking, `best_overwatch` | `tests/test_visibility.py` |
+| `defection_protocol.py` | Staged weighted risk scoring, monotonic approval + plan gate, KOSKOV scenario; backstop `EvidenceCheck` / certainty / verdict | `tests/test_defection_protocol.py` |
+| `terrain_ops.py` | Seeded elevation/landcover/cover grid, blended step cost, Dijkstra routing, independent cover audit | `tests/test_terrain_ops.py` |
+| `settings.py` | Every fixed mission parameter (single source of truth) | exercised throughout |
+| `compute_mission.py` | The one deterministic mission solution + SHA-256 `input_hash` | `tests/test_compute_mission.py` |
+| `mission.py` | Frozen BOND-API `MissionProvider` (brief/recon/plan/execute/debrief) + module-level `GADGETS` | `tests/test_mission.py` |
+| `manuscript_variables.py` | Token hydration with an enforceable `require_outputs` gate and injectable solution; strict tree resolution | `tests/test_manuscript_variables.py` |
+| `figures/plots.py` | Four deterministic plates (ballistics, exfil route, glint-vs-range, overwatch nests) | `tests/test_figures.py` |
 
-## Not in scope
+**Thin scripts** — `brief.py`, `recon.py`, `plan.py`, `execute.py`,
+`debrief.py`, `00_preflight.py`, `z_generate_manuscript_variables.py`, all
+covered by real subprocess smoke tests.
 
-- Stochastic adversary modelling, full atmosphere (spin/Magnus/Coriolis), or
-  line-of-sight occlusion queries — intentionally kept deterministic.
+**Manuscript** — the full canonical section set (`00`–`07`, `99`) plus
+`preamble.md`, `config.yaml`, `references.bib`, and the directory's own README /
+AGENTS / SYNTAX. Every metric arrives as a token; the bibliography cites real,
+checkable sources.
+
+**Documentation** — `README.md`, `AGENTS.md`, this file, and the full `docs/`
+baseline (`README.md`, `AGENTS.md`, `agent_instructions.md`, `architecture.md`,
+`testing_philosophy.md`, `_generated/COUNTS.md`).
+
+**Gates** — `pytest --cov=src --cov-fail-under=90` green (live totals in
+[`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md)); `ruff` + `mypy`
+clean; zero mocks; deterministic; zero `template[_]code_project` strings; own
+git repo, path-scoped commits.
+
+## Fixed in the phase-5 review
+
+- `pack_cello_case` reported each part's lane and span by re-zipping placements
+  against the caller's input order, while the packer sorts parts
+  width-descending internally — so `barrel_receiver` (0.62 m) was reported in
+  `stock`'s 0.48 m slot and vice versa. Placements now carry their own part;
+  `test_cello_layout_binds_each_part_to_its_own_slot` is the regression guard.
+- The manuscript's methodology described the glint geometry factor as a
+  **cosine** sun-elevation term; the code uses `sin`.
+- The methodology cited the ballistic holdover token as if it were the mil-dot
+  *reticle span*, producing a false statement about how ranging works.
+- `manuscript/config.yaml` declared its `mission:` block "the single
+  authoritative source for the domain modules" — it is read by nothing. It is
+  now labelled a reader-facing echo and pinned to `settings.py` by a test.
+- `generate_variables`'s `require_outputs` guard could never fire. It now
+  checks named required sections and accepts an injected `solution=`, so it is
+  testable — and is tested against each section removed in turn.
+- Removed two unreachable guards that provided no safety (`ballistics`
+  zero-area check behind a validating constructor; a `tau <= 0` branch made
+  dead by adding real `v0` validation to `time_of_flight`).
+- Removed dead code: an unused `mountain_c` landcover alias and an unused
+  `landcover` parameter on `terrain_ops._cover`.
+- Strengthened weak assertions: the cover-weight trade-off is now `>` not `>=`
+  (a `>=` would pass with the parameter ignored entirely), and the exposure
+  term's exact cost contribution is asserted.
+
+## Open
+
+- **bond-utilities provenance (not yet bound).** The mission computes its own
+  deterministic `input_hash`. When the shared helper lands, delegate outcome
+  persistence to `bond_utilities.mission_io.record_provenance_outcome`.
+  Acceptance: a recorded outcome whose provenance block equals `execute()`'s
+  `Provenance` field for field.
+- **Unreachable-by-construction guards.** `plan_route`'s "goal is unreachable"
+  raise cannot fire on a fully connected 4-adjacent grid, and `_sample_at`'s
+  zero-width-span branch cannot fire on a monotone trajectory. Both are kept as
+  defensive guards for future callers, and both are why `src/` coverage is not
+  100%. If the terrain model ever grows impassable cells, the first becomes
+  live and needs a test.
+- **`plots.py` `best is None` branch** is uncovered: no seed currently produces
+  a target that no candidate can see. Covering it needs a fixture grid rather
+  than the mission's own, which would mean parameterizing the figure functions.
+
+## Not in scope (deliberate)
+
+Stochastic adversary modelling; full atmosphere (spin, Magnus, Coriolis,
+transonic drag rise, layering); spectral or polarization radiometry; ballistic
+shockwave geometry and acoustic multipath; bearing uncertainty models; earth
+curvature or refraction in line of sight; human factors and communications.
+These are enumerated with reasons in
+[`manuscript/07_scope_and_related_work.md`](manuscript/07_scope_and_related_work.md).

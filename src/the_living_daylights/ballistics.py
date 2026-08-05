@@ -96,11 +96,13 @@ class Projectile:
 
     @property
     def ballistic_coefficient(self) -> float:
-        """Ballistic coefficient ``m / (A*C_d)`` in kg/m^2."""
-        a = self.cross_section_area
-        if a <= 0:
-            raise ValueError("Projectile has zero cross-section area")
-        return self.mass_kg / (a * self.drag_coefficient)
+        """Ballistic coefficient ``m / (A*C_d)`` in kg/m^2.
+
+        ``__post_init__`` already guarantees a positive caliber and drag
+        coefficient, so the denominator is always positive — no second guard
+        is added here, since a check that cannot fail is not a check.
+        """
+        return self.mass_kg / (self.cross_section_area * self.drag_coefficient)
 
 
 def ballistic_coefficient(projectile: Projectile) -> float:
@@ -246,15 +248,18 @@ def time_of_flight(range_m: float, v0: float, *, projectile: Projectile | None =
     Uses the closed-form constant-drag-decay flight time: drag shortens the
     no-drag time ``range / v0`` by a deterministic fraction. Deterministic and
     smooth in ``range_m``.
+
+    Raises:
+        ValueError: if ``range_m`` or ``v0`` is not positive.
     """
     if not (range_m > 0):
         raise ValueError("range_m must be positive")
+    if not (v0 > 0):
+        raise ValueError("v0 must be positive")
     k = drag_factor(projectile) if projectile is not None else _drag_from_v0()
     # Reference deceleration at muzzle speed; yields a monotone, physical TOF.
-    a_ref = k * v0 * v0
-    tau = v0 / a_ref
-    if tau <= 0:
-        return range_m / v0
+    # tau = v0 / (k * v0^2) = 1 / (k * v0) is strictly positive for v0 > 0.
+    tau = v0 / (k * v0 * v0)
     return tau * math.log1p(range_m / (v0 * tau))
 
 
@@ -529,7 +534,7 @@ def _fits_in(part: RiflePart, case: CelloCase) -> bool:
 def _shelf_pack(
     parts: tuple[RiflePart, ...] | list[RiflePart],
     case: CelloCase,
-) -> tuple[bool, list[tuple[int, float, float, float]]]:
+) -> tuple[bool, list[tuple[RiflePart, int, float, float, float]]]:
     """Pack parts into the case using bottom-left shelf packing.
 
     Parts are treated as rectangles laid along the case's long axis (x) and
@@ -538,15 +543,18 @@ def _shelf_pack(
     (stacked in y) when none does. Deterministic — the sort makes the result
     stable regardless of container iteration order.
 
-    Returns ``(fits, placements)`` where each placement is
-    ``(lane_index, start_x, end_x, used_width)``.
+    Returns ``(fits, placements)`` where each placement carries **the part it
+    belongs to** followed by ``(lane_index, start_x, end_x, used_width)``.
+    Placements are emitted in the internal width-descending processing order,
+    not the caller's input order, so callers must read the part off the
+    placement rather than re-zipping against their own sequence.
     """
     if any(not _fits_in(p, case) for p in parts):
         return False, []
     ordered = sorted(parts, key=lambda p: (-p.width_m, p.name))
     # Each shelf: [filled_length, height(used width), baseline_y]
     shelves: list[list[float]] = []
-    placements: list[tuple[int, float, float, float]] = []
+    placements: list[tuple[RiflePart, int, float, float, float]] = []
     for part in ordered:
         placed = False
         for idx, shelf in enumerate(shelves):
@@ -557,7 +565,7 @@ def _shelf_pack(
             ):
                 shelf[0] = filled + part.length_m
                 shelf[1] = height + part.width_m
-                placements.append((idx, filled, filled + part.length_m, shelf[1]))
+                placements.append((part, idx, filled, filled + part.length_m, shelf[1]))
                 placed = True
                 break
         if placed:
@@ -566,7 +574,7 @@ def _shelf_pack(
         new_y = sum(s[1] for s in shelves)
         if new_y + part.width_m <= case.interior_width_m + 1e-9:
             shelves.append([part.length_m, part.width_m, new_y])
-            placements.append((len(shelves) - 1, 0.0, part.length_m, new_y + part.width_m))
+            placements.append((part, len(shelves) - 1, 0.0, part.length_m, new_y + part.width_m))
         else:
             return False, []
     return True, placements
@@ -583,15 +591,20 @@ def pack_cello_case(
     rather than forced end to end. Each part must also fit the interior
     cross-section on its own.
 
-    Returns ``(fits, layout)`` where ``layout`` carries per-part placement, the
-    number of lanes used, and the packing efficiency (used length fraction of
-    the busiest lane).
+    Returns ``(fits, layout)``. ``layout['parts']`` maps each part's name to
+    *its own* lane and ``[start_m, end_m]`` span (so ``end_m - start_m`` equals
+    that part's length); ``layout['lanes_used']`` is the number of parallel
+    lanes; ``layout['efficiency']`` is the **areal** packing efficiency — the
+    summed footprint of the parts over the case's floor area — and
+    ``layout['packed_length_m']`` is the longest lane's filled length.
     """
     fits, placements = _shelf_pack(parts, case)
     if not fits:
         return False, {"reason": "parts exceed cello-case interior capacity"}
-    max_end = max((end for _lane, _s, end, _w in placements), default=0.0)
-    lanes_used = max((lane for lane, _s, _e, _w in placements), default=-1) + 1 if placements else 0
+    max_end = max((end for _p, _lane, _s, end, _w in placements), default=0.0)
+    lanes_used = (
+        max((lane for _p, lane, _s, _e, _w in placements), default=-1) + 1 if placements else 0
+    )
     area_total = sum(p.length_m * p.width_m for p in parts)
     area_case = case.interior_length_m * case.interior_width_m
     efficiency = area_total / area_case if area_case > 0 else 0.0
@@ -600,8 +613,8 @@ def pack_cello_case(
         "lanes_used": lanes_used,
         "efficiency": efficiency,
         "parts": {
-            p.name: {"lane": lane, "start_m": s, "end_m": e}
-            for p, (lane, s, e, _w) in zip(parts, placements, strict=True)
+            part.name: {"lane": lane, "start_m": s, "end_m": e}
+            for part, lane, s, e, _w in placements
         },
     }
     return True, layout

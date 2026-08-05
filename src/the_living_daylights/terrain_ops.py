@@ -25,6 +25,7 @@ from typing import Final
 import numpy as np
 
 __all__ = [
+    "COVER_THRESHOLD_M",
     "LANDCOVER",
     "RouteResult",
     "TerrainGrid",
@@ -32,6 +33,7 @@ __all__ = [
     "boulder_field",
     "generate_terrain",
     "landcover_name",
+    "mountain",
     "open_desert",
     "plan_route",
     "ridgeline",
@@ -49,7 +51,6 @@ boulder_field: Final[int] = 3
 ridgeline: Final[int] = 4
 wadi: Final[int] = 5
 trail: Final[int] = 6
-mountain_c: Final[int] = mountain  # alias for readability
 
 #: Landcover table: code -> (name, base cost per metre, base cover in [0,1]).
 LANDCOVER: Final[dict[int, tuple[str, float, float]]] = {
@@ -74,8 +75,14 @@ def landcover_name(code: int) -> str:
     return LANDCOVER[code][0]
 
 
-def _cover(landcover: np.ndarray, cover_height: np.ndarray) -> np.ndarray:
-    """Effective concealment in [0,1]: cover height normalized to the threshold."""
+def _cover(cover_height: np.ndarray) -> np.ndarray:
+    """Effective concealment in [0,1]: cover height normalized to the threshold.
+
+    Concealment is a pure function of standing cover height — the landcover
+    code only sets that height at generation time (see :func:`generate_terrain`)
+    and is deliberately *not* re-consulted here, so an edited ``cover_height``
+    field is honoured verbatim by routing and visibility.
+    """
     return np.clip(cover_height / COVER_THRESHOLD_M, 0.0, 1.0)
 
 
@@ -114,7 +121,7 @@ class TerrainGrid:
 
     def cover_array(self) -> np.ndarray:
         """Concealment in [0,1] over the whole grid."""
-        return _cover(self.landcover, self.cover_height)
+        return _cover(self.cover_height)
 
     def in_bounds(self, r: int, c: int) -> bool:
         return 0 <= r < self.n and 0 <= c < self.n
@@ -197,7 +204,7 @@ def step_cost(
     code = int(grid.landcover[r2, c2])
     _name, base_cost, _base_cover = LANDCOVER[code]
     climb = max(0.0, float(grid.elevation[r2, c2] - grid.elevation[r1, c1]))
-    eff_cover = float(_cover(grid.landcover, grid.cover_height)[r2, c2])
+    eff_cover = float(_cover(grid.cover_height)[r2, c2])
     exposure = 1.0 - eff_cover
     per_metre = base_cost + _GRAVITY_CLIMB_M * climb / grid.cell_size_m + cover_weight * exposure
     return per_metre * grid.cell_size_m
