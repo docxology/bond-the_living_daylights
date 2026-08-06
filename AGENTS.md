@@ -85,7 +85,7 @@ uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/
 uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/ scripts/
-grep -rn "unittest.mock\|MagicMock\|@patch\|create_autospec" tests/ || echo "no mocks"
+# zero-mock gate is an AST scan of src/, tests/, scripts/ (tests/test_no_mock_frameworks.py)
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' || echo "no lineage"
 git status --short   # clean after the path-scoped commit
 ```

@@ -24,7 +24,7 @@ item below is a hard constraint, not a suggestion.
 - **One solution.** Every number the package reports comes from
   `compute_mission.mission_solution()`. The mission outcome, the manuscript,
   and the figures are all readers of that one call.
-- **Zero mocks.** No `unittest.mock` / `MagicMock` / `@patch` /
+# zero-mock gate is an AST scan of src/, tests/, scripts/ (tests/test_no_mock_frameworks.py)
   `create_autospec` anywhere in `tests/`.
 - **Determinism.** Fixed seeds, no global RNG, no wall-clock in persisted
   artifacts — no exception. `MANUSCRIPT_DATE` is the committed `paper.date`

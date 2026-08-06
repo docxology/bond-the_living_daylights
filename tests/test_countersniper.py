@@ -156,3 +156,21 @@ def test_triangulate_position_errors() -> None:
         cs.triangulate_position([(0.0, 0.0), (1.0, 0.0)], [45.0])  # length mismatch
     with pytest.raises(ValueError):
         cs.triangulate_position([(0.0, 0.0), (100.0, 0.0)], [45.0, 45.0])  # parallel
+
+
+def test_triangulate_position_rejects_non_finite_inputs() -> None:
+    """Regression: NaN/inf propagated silently into a NaN "fix".
+
+    A NaN bearing or an inf observer coordinate previously flowed through the
+    normal equations and returned ``(nan, nan, nan)`` with no error — a
+    fail-open on a detection/localization path. It must reject loudly.
+    """
+    with pytest.raises(ValueError):
+        cs.triangulate_position(((0.0, 0.0), (100.0, 0.0)), (float("nan"), 135.0))
+    with pytest.raises(ValueError):
+        cs.triangulate_position(((0.0, 0.0), (float("inf"), 0.0)), (45.0, 135.0))
+    with pytest.raises(ValueError):
+        cs.triangulate_position(((0.0, 0.0), (100.0, 0.0)), (45.0, float("-inf")))
+    # the valid case still yields a finite fix and residual
+    x, y, res = cs.triangulate_position(((0.0, 0.0), (100.0, 0.0)), (45.0, 135.0))
+    assert math.isfinite(x) and math.isfinite(y) and math.isfinite(res)

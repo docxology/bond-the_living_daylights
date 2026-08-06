@@ -188,14 +188,21 @@ def triangulate_position(
     degrees clockwise from north; coordinates are in consistent units (m).
 
     Raises:
-        ValueError: if fewer than two observers, or the bearings are
-            parallel/collinear (singular normal matrix).
+        ValueError: if fewer than two observers, the bearings are
+            parallel/collinear (singular normal matrix), or any observer
+            coordinate or bearing is NaN/inf (a non-finite input would
+            otherwise propagate silently into a NaN "fix").
     """
     n = len(observers)
     if n < 2:
         raise ValueError("triangulation requires at least two observers")
     if n != len(bearings_deg):
         raise ValueError("observers and bearings must be same length")
+    # A NaN/inf coordinate or bearing must fail loudly: with finite inputs the
+    # normal matrix is finite, so this single guard roots out NaN propagation.
+    for (x_i, y_i), theta in zip(observers, bearings_deg, strict=True):
+        if not (math.isfinite(x_i) and math.isfinite(y_i) and math.isfinite(theta)):
+            raise ValueError("triangulation inputs must be finite (reject NaN/inf)")
 
     a11 = 0.0
     a12 = 0.0

@@ -17,6 +17,7 @@ no wall-clock). Output lands under ``output/figures/`` (git-ignored).
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -160,10 +161,19 @@ def render_glint_figure(output_dir: Path | None = None) -> Path:
     return path
 
 
-def render_overwatch_figure(output_dir: Path | None = None) -> Path:
-    """Plot the extraction site, ranked sniper nests, and the best nest line."""
+def render_overwatch_figure(
+    output_dir: Path | None = None, *, solution: dict[str, Any] | None = None
+) -> Path:
+    """Plot the extraction site, ranked sniper nests, and the best nest line.
+
+    ``solution`` overrides the live mission solution (mirroring
+    ``manuscript_variables``'s injectable ``solution=``) so the no-visible-nest
+    arm — ``overwatch.best_cell`` is ``None`` — can be exercised; on the
+    shipped grid at least one candidate sees the site, so without the injection
+    point that branch is unreachable in test.
+    """
     out = output_dir if output_dir is not None else _output_dir()
-    sol = mission_solution()
+    sol = mission_solution() if solution is None else solution
     grid = terrain_ops.generate_terrain(
         settings.TERRAIN_N, settings.TERRAIN_SEED, settings.TERRAIN_CELL_SIZE_M
     )

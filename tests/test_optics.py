@@ -89,3 +89,23 @@ def test_zero_click_schedule() -> None:
     assert schedule == {"elevation_clicks": 27, "wind_clicks": -6}
     moa_schedule = o.zero_click_schedule(MOA_SCOPE, 2.68, -0.63)
     assert moa_schedule["elevation_clicks"] == o.clicks_for_angle(MOA_SCOPE, 2.68)
+
+
+def test_mil_dot_range_and_inverse_reject_non_positive_target_size() -> None:
+    """Regression: a zero/negative silhouette silently gave nonsense range.
+
+    ``mil_dot_range(-1, 6)`` returned -167 m and ``mil_dot_range(0, 6)``
+    returned 0 m with no error; ``mils_for_size`` had the same gap. A target
+    size must be positive.
+    """
+    with pytest.raises(ValueError):
+        o.mil_dot_range(0.0, 6.0)
+    with pytest.raises(ValueError):
+        o.mil_dot_range(-1.0, 6.0)
+    with pytest.raises(ValueError):
+        o.mils_for_size(0.0, 300.0)
+    with pytest.raises(ValueError):
+        o.mils_for_size(-1.0, 300.0)
+    # a positive silhouette still ranges normally
+    assert math.isclose(o.mil_dot_range(1.8, 6.0), 300.0)
+    assert math.isclose(o.mils_for_size(1.8, 300.0), 6.0)

@@ -139,3 +139,28 @@ def test_koskov_verification_certainty_and_verdict() -> None:
     certainty = d.verification_certainty(checks)
     assert math.isclose(certainty, 0.67, abs_tol=1e-9)
     assert d.backstop_verdict(certainty) == "conditional"
+
+
+def test_plan_gate_and_backstop_can_disagree() -> None:
+    """Negative control (V2): the two authored tables are not coupled.
+
+    Perturbing ONLY the staged scenario — pushing the ``verify`` stage over the
+    no-go threshold — must move the plan verdict while the backstop evidence
+    (left untouched) stays. If one model were a projection of the other they
+    could not diverge this way, so the shipped agreement is a real fact that
+    could have come out otherwise.
+    """
+    scenario = [
+        s
+        if s.stage != "verify"
+        else d.StageRiskInput("verify", (d.RiskFactor("identity breakdown", 1.0, 0.9),))
+        for s in d.koskov_scenario()
+    ]
+    plan = d.assess_defection(tuple(scenario))
+    backstop = d.backstop_verdict(d.verification_certainty(d.koskov_verification()))
+    assert plan.plan_verdict == "no-go"  # only the staged table moved
+    assert backstop == "conditional"  # evidence table untouched
+    assert plan.plan_verdict != backstop  # they genuinely can disagree
+    # and on the shipped tables they agree by construction of both, not coupling
+    shipped = d.assess_defection(d.koskov_scenario())
+    assert shipped.plan_verdict == backstop == "conditional"

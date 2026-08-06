@@ -53,3 +53,28 @@ def test_default_output_dir_is_the_package_output_tree() -> None:
     assert default.parent.name == "output"
     # it must sit inside this package, not the caller's cwd
     assert (default.parent.parent / "src" / "the_living_daylights").is_dir()
+
+
+def test_render_overwatch_figure_none_best(tmp_path) -> None:
+    """Regression (V4): the no-visible-nest arm needs an injection point.
+
+    On the shipped grid at least one candidate sees the site, so without an
+    injectable ``solution=`` the ``best is None`` branch of
+    :func:`render_overwatch_figure` was unreachable in test (and uncovered).
+    """
+    from the_living_daylights.compute_mission import mission_solution
+
+    sol = mission_solution()
+    sol["overwatch"] = {
+        **sol["overwatch"],
+        "best_cell": None,
+        "best_score": 0.0,
+        "best_distance_m": 0.0,
+        "best_cover": 0.0,
+        "best_elevation_gain_m": 0.0,
+        "best_visible": False,
+        "top_three": (),
+    }
+    path = render_overwatch_figure(tmp_path, solution=sol)
+    assert path.exists()
+    assert path.stat().st_size > 0

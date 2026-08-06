@@ -115,12 +115,14 @@ def test_assess_cover() -> None:
         assert float(lowest) == pytest.approx(float(oracle["min_cover"]))  # type: ignore[arg-type]
     assert audit["min_cover_index"] == oracle["min_cover_index"] == route.min_cover_index
     assert audit["cover_points"] == oracle["cover_points"] == route.cover_points
-    # and the per-waypoint map must cover every step with the grid's own values
+    # and the per-waypoint map must cover every step, in path order, with the
+    # grid's own values (one entry per waypoint — a revisit appears twice)
     waypoints = audit["waypoint_cover"]
-    assert isinstance(waypoints, dict)
-    assert len(waypoints) == len({cell for cell in route.path})
+    assert isinstance(waypoints, tuple)
+    assert len(waypoints) == len(route.path)
     cover = grid.cover_array()
-    for (r, c), value in ((tuple(int(v) for v in k.split(",")), v) for k, v in waypoints.items()):
+    for (cell, value), (r, c) in zip(waypoints, route.path, strict=True):
+        assert cell == (r, c)
         assert value == pytest.approx(float(cover[r, c]))
     with pytest.raises(ValueError):
         t.assess_cover(grid, ())
@@ -142,7 +144,7 @@ def test_assess_cover_grades_a_path_the_planner_never_produced() -> None:
     assert float(audit["min_cover"]) == pytest.approx(float(oracle["min_cover"]))  # type: ignore[arg-type]
     assert audit["min_cover_index"] == oracle["min_cover_index"]
     assert audit["cover_points"] == oracle["cover_points"]
-    assert len(audit["waypoint_cover"]) == len(set(hand_path))  # type: ignore[arg-type]
+    assert len(audit["waypoint_cover"]) == len(hand_path)  # type: ignore[arg-type]
 
 
 def test_cover_array_tracks_cover_height_not_landcover_code() -> None:
@@ -171,3 +173,26 @@ def test_terrain_grid_rejects_non_square_arrays() -> None:
     rect = np.zeros((2, 3))
     with pytest.raises(ValueError, match="square"):
         t.TerrainGrid(rect, np.zeros((2, 3), dtype=np.int64), rect.copy(), 500.0, 1)
+
+
+def test_assess_cover_keeps_one_entry_per_repeated_waypoint() -> None:
+    """Regression (C1): a path that revisits a cell must not drop its reading.
+
+    The per-waypoint map used to be a dict keyed on ``"r,c"``, so a
+    there-and-back path silently lost entries while the docstring promised
+    per-waypoint concealment. ``mean_cover`` / ``min_cover`` / ``cover_points``
+    were always computed over the full sequence; only the map was lossy.
+    """
+    grid = t.generate_terrain(seed=7)
+    repeated = ((0, 0), (5, 5), (0, 0), (31, 31))  # (0, 0) revisited
+    audit = t.assess_cover(grid, repeated)
+    waypoints = audit["waypoint_cover"]
+    assert isinstance(waypoints, tuple)
+    # one reading per waypoint, in path order — the revisit appears twice
+    assert len(waypoints) == len(repeated)
+    assert [cell for cell, _v in waypoints].count((0, 0)) == 2
+    assert waypoints[0][0] == waypoints[2][0] == (0, 0)
+    # and the aggregate summary still reflects the repeated sequence
+    oracle = _oracle_cover(grid, repeated)
+    assert float(audit["mean_cover"]) == pytest.approx(float(oracle["mean_cover"]))  # type: ignore[arg-type]
+    assert audit["min_cover_index"] == oracle["min_cover_index"]

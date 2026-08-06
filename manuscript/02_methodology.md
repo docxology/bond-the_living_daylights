@@ -245,3 +245,33 @@ the hardest kind of site to overwatch — and candidate nests are sampled every
 keys under SHA-256. The mission adapter, the manuscript token map, and the
 figures all read the same call, so no consumer can report a number the others
 did not compute.
+
+
+## Input-contract hardening
+
+The pure core fails loud on numerically invalid inputs rather than propagating
+garbage. Four guards are bound by regression tests that would fail on the code
+that preceded them:
+
+* `ballistics.wind_drift` and `ballistics.wind_hold_mrad` reject a non-positive
+  range. The hold computes `-drift / range · 1000`, so a zero range previously
+  slipped through to an opaque `ZeroDivisionError`; both now raise a
+  `ValueError`, matching `time_of_flight` and `drop_at_range`.
+* `optics.mil_dot_range` and `optics.mils_for_size` reject a non-positive target
+  size. The mil-dot relation `range = size · 1000 / mils` is linear in the
+  silhouette, so a zero or negative `target_size_m` silently produced a zero or
+  negative (nonsense) range; both now raise.
+* `countersniper.triangulate_position` rejects any non-finite observer
+  coordinate or bearing. A NaN bearing previously flowed through the
+  closed-form normal equations and returned a NaN "fix" with no error — a
+  fail-open on a detection/localization path. The single finite-input guard
+  roots this out, since a finite determinant follows from finite inputs.
+* `terrain_ops.assess_cover` reports `waypoint_cover` as one `(cell, cover)`
+  pair per waypoint, in path order, so a path that revisits a cell keeps a
+  reading for every visit. An earlier dict keyed on `"r,c"` silently dropped
+  the duplicate reading. The aggregate `mean_cover` / `min_cover` /
+  `cover_points` were always computed over the full sequence; only the map was
+  lossy.
+
+Each guard carries a matching positive assertion that the healthy path is
+unchanged, so these are checks of a real contract, not new ways to fail.

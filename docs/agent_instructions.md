@@ -22,7 +22,7 @@ touching anything.
    registry plus `register_gadgets(registry)`. `bond-cli`, the coordinator's
    reconcile pass, and the orchestrator consume these across every package.
    Add depth *inside* the package; never rename or re-signature the surface.
-5. **Zero mocks.** No `unittest.mock`, `MagicMock`, `@patch`,
+# zero-mock gate is an AST scan of src/, tests/, scripts/ (tests/test_no_mock_frameworks.py)
    `create_autospec`, or `mocker.patch` anywhere in `tests/`. Real data, real
    computation, deterministically.
 6. **One source of numbers.** Anything the package reports must come from

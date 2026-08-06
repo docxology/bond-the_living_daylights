@@ -414,7 +414,12 @@ def wind_drift(
     integrated along the simulated flight. Convention: positive ``wind_speed``
     (from the right) pushes the bullet left-of-line (negative offset), matching
     the shooter-is-facing-target sign used by windage holds.
+
+    Raises:
+        ValueError: if ``range_m`` is not positive.
     """
+    if not (range_m > 0):
+        raise ValueError("range_m must be positive")
     if wind_speed == 0.0:
         return 0.0
     xs, _y, zs, _t = trajectory(
@@ -426,7 +431,16 @@ def wind_drift(
 def wind_hold_mrad(
     range_m: float, wind_speed: float, v0: float, *, projectile: Projectile | None = None
 ) -> float:
-    """Windage hold in milliradians that cancels crosswind drift at range."""
+    """Windage hold in milliradians that cancels crosswind drift at range.
+
+    Validates ``range_m`` positive so an opaque ``ZeroDivisionError`` can never
+    escape a zero range (``hold = -drift / range * 1000`` divides by range).
+
+    Raises:
+        ValueError: if ``range_m`` is not positive.
+    """
+    if not (range_m > 0):
+        raise ValueError("range_m must be positive")
     drift = wind_drift(range_m, wind_speed, v0, projectile=projectile)
     return -drift / range_m * 1e3
 

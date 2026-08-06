@@ -110,15 +110,23 @@ def mil_dot_range(target_size_m: float, mils: float) -> float:
 
     The milliradian relation: one mil subtends 1 m at 1000 m, so a target of
     height ``target_size_m`` spanning ``mils`` on the reticle sits at that
-    range. Raises on non-positive mils.
+    range. Raises on a non-positive mil reading or target size (a zero or
+    negative ``target_size_m`` would silently produce a nonsense range).
     """
     if not (mils > 0):
         raise ValueError("mil reading must be positive")
+    if not (target_size_m > 0):
+        raise ValueError("target_size_m must be positive")
     return target_size_m * 1000.0 / mils
 
 
 def mils_for_size(target_size_m: float, range_m: float) -> float:
-    """Reticle span (mils) of a target of size ``target_size_m`` at range."""
+    """Reticle span (mils) of a target of size ``target_size_m`` at range.
+
+    Raises on a non-positive target size or range.
+    """
+    if not (target_size_m > 0):
+        raise ValueError("target_size_m must be positive")
     if not (range_m > 0):
         raise ValueError("range must be positive")
     return target_size_m * 1000.0 / range_m

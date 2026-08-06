@@ -308,6 +308,13 @@ def assess_cover(grid: TerrainGrid, path: tuple[tuple[int, int], ...]) -> dict[s
     a hand-drawn alternative — reporting ``mean_cover``, ``cover_points``,
     ``min_cover``, ``min_cover_index``, and per-waypoint concealment.
 
+    ``waypoint_cover`` carries **one entry per waypoint, in path order** — a
+    cell that a path revisits therefore appears once per visit. It is a tuple
+    of ``((r, c), cover)`` pairs, so indexing it by position always matches the
+    waypoint sequence and no concealment reading is silently dropped. The
+    aggregate ``mean_cover`` / ``min_cover`` / ``cover_points`` are computed
+    over the full sequence (repeats included), consistent with that map.
+
     **What the agreement with** :func:`plan_route` **does and does not show.**
     This function deliberately does *not* call :func:`_summarize`: it is a
     vectorised numpy path over the same concealment definition, where the
@@ -335,5 +342,7 @@ def assess_cover(grid: TerrainGrid, path: tuple[tuple[int, int], ...]) -> dict[s
         ),
         "min_cover": float(values[min_index]),
         "min_cover_index": min_index,
-        "waypoint_cover": {f"{r},{c}": float(cover[r, c]) for (r, c) in path},
+        # One reading per waypoint, in path order — a revisited cell appears
+        # once per visit so grading a there-and-back path loses no data.
+        "waypoint_cover": tuple((cell, float(v)) for cell, v in zip(path, values, strict=True)),
     }

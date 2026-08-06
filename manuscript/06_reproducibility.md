@@ -39,7 +39,7 @@ precisely what each one does and does not enforce:
 ```bash
 uv run pytest tests/ --cov=src --cov-fail-under=90   # tests + coverage + no-mock scan
 uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
-uv run mypy src/
+uv run mypy src/ scripts/
 ```
 
 The pytest command enforces two things: ≥90% line+**branch** coverage of `src/`

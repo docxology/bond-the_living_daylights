@@ -333,3 +333,23 @@ def test_shelf_pack_runs_out_of_width() -> None:
     fits, layout = b.pack_cello_case(parts, case)
     assert fits is False
     assert layout["reason"]
+
+
+def test_wind_functions_validate_range() -> None:
+    """Regression: wind_hold_mrad(0, ...) raised an opaque ZeroDivisionError.
+
+    The hold divides by ``range_m``, so a zero range reached the division and
+    raised ``ZeroDivisionError``; ``wind_drift`` accepted a zero range without
+    comment. Both must reject a non-positive range with a clear ``ValueError``,
+    consistent with ``time_of_flight`` / ``drop_at_range``.
+    """
+    with pytest.raises(ValueError):
+        b.wind_drift(0.0, 5.0, V0, projectile=PROJ)
+    with pytest.raises(ValueError):
+        b.wind_drift(-10.0, 5.0, V0, projectile=PROJ)
+    with pytest.raises(ValueError):
+        b.wind_hold_mrad(0.0, 5.0, V0, projectile=PROJ)
+    with pytest.raises(ValueError):
+        b.wind_hold_mrad(-10.0, 5.0, V0, projectile=PROJ)
+    # a positive range still computes normally at zero wind
+    assert b.wind_hold_mrad(300.0, 0.0, V0, projectile=PROJ) == 0.0

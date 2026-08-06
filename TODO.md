@@ -212,3 +212,63 @@ diff -r "$R1" "$R2" && echo "byte-identical"
 Live measured totals live in [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md).
 This is a local-only working tree: no remote, never push, commit path-scoped
 inside this package only.
+
+
+## Round-2 (2026-08-06)
+
+Hostile-review pass and manuscript deepening. Measured on this machine on
+2026-08-06 on the tree this section is committed with: **135 tests pass, 0
+failures / 0 errors / 0 skips, 99.52% line+branch coverage on `src/`**
+(`uv run pytest tests/ --cov=src --cov-fail-under=90`, Python 3.14.6), with
+`ruff check`, `ruff format --check`, and `mypy src/ scripts/` all clean
+(baseline before this round: 129 tests, 99.44%).
+
+### Findings fixed, with test evidence
+
+| # | Defect (hostile-review) | Fix | Regression / negative control |
+|---|---|---|---|
+| F1 | `terrain_ops.assess_cover`'s `waypoint_cover` was a dict keyed `"r,c"`, so a path revisiting a cell silently dropped a concealment reading — contradicting the "per-waypoint concealment" docstring (C1). `mean_cover`/`min_cover`/`cover_points` were always right; only the map was lossy. | `waypoint_cover` is now a tuple of `(cell, cover)` pairs, one per waypoint in path order | `test_assess_cover_keeps_one_entry_per_repeated_waypoint` grades a path containing `(0,0)` twice and asserts the map length equals the path length and the revisit appears twice |
+| F2 | `optics.mil_dot_range(-1, 6)` returned **−167 m** and `mil_dot_range(0, 6)` returned **0 m** with no error; `mils_for_size` had the same gap — a non-positive target size silently produced a nonsense range on a ranging relation. | reject `target_size_m <= 0` in `mil_dot_range` and `mils_for_size` with `ValueError` | `test_mil_dot_range_and_inverse_reject_non_positive_target_size` asserts the four raises and that a positive silhouette still ranges (1.8 m / 6 mils → 300 m) |
+| F3 | `ballistics.wind_hold_mrad(0, ...)` raised an opaque **`ZeroDivisionError`** (the hold divides by range); `wind_drift` accepted a zero range silently. | reject non-positive `range_m` in both with `ValueError`, matching `time_of_flight`/`drop_at_range` | `test_wind_functions_validate_range` asserts both raise on `0.0` and `-10.0` and that zero wind at a positive range still yields a zero hold |
+| F4 | `countersniper.triangulate_position` returned `(nan, nan, nan)` for a NaN bearing or inf observer — a **fail-open** on a detection/localization path (the Nan/inf-propagation class). | reject any non-finite observer coordinate or bearing with `ValueError`; finite inputs ⇒ finite determinant, so one guard roots it out | `test_triangulate_position_rejects_non_finite_inputs` asserts NaN bearing, inf observer, and `-inf` bearing all raise, and the valid pair still yields a finite fix |
+| F5 | (V2) nothing proved the plan-gate / backstop-verdict agreement was even a *design*-consistency check — no test showed the two scoring paths can disagree. | — (test-only) | `test_plan_gate_and_backstop_can_disagree` perturbs **only** the `verify` stage over the no-go threshold and asserts the plan verdict moves to `no-go` while the untouched backstop stays `conditional` — they genuinely can diverge, so shipped agreement is a real fact |
+| F6 | (V4) `figures/plots.py`'s `best is None` arm of `render_overwatch_figure` was the last uncovered branch outside the defensive-guard set, with no injection point (the shipped grid always has a visible nest). | `render_overwatch_figure` gained an injectable `solution=` (mirroring `manuscript_variables`) | `test_render_overwatch_figure_none_best` renders the plate from a solution whose `overwatch.best_cell` is `None`; `plots.py` is now **100%** (previous 99.22%) |
+
+### Documentation tightened
+
+* (D1) `manuscript/06_reproducibility.md`'s gate block now runs
+  `uv run mypy src/ scripts/`, matching `README.md` and `AGENTS.md` (it had
+  `uv run mypy src/`, so a reader never type-checked `scripts/`).
+* (D2) `AGENTS.md`, `docs/AGENTS.md`, and `docs/agent_instructions.md` now
+  cite `tests/test_no_mock_frameworks.py` as the no-mock gate (the AST scan)
+  instead of a four-literal `grep ... || echo "no mocks"` that could never
+  fail and could miss an aliased import.
+* (V3) every DOI in `manuscript/references.bib` was resolved at doi.org on
+  2026-08-06 and the results recorded as a header comment: the corrected
+  `10.1117/12.266747` resolves to Duckworth, Gilbert & Barger, *Proc. SPIE*
+  2938:262–275 (the cited paper), and the `ledeczi2005`, `dijkstra1959`, and
+  `bresenham1965` DOIs all resolve to their cited works.
+* `manuscript/02_methodology.md` gained an **Input-contract hardening**
+  subsection documenting the four new numeric guards (F2–F6 style) with their
+  owning regression tests. Prose stays token-free metric-wise.
+
+### Remainder for a future round
+
+* **V1 (carried):** `compute_mission`'s overwatch visibility gate is still
+  green-by-construction on the shipped terrain — with candidate steps 1–3 the
+  top-scored candidate is visible at every density probed this round, so
+  `best_overwatch` and `ranked[0]` coincide. The policy is correct and the
+  limitation is disclosed in `02_methodology.md` and
+  `tests/test_compute_mission.py`; binding it at the compute layer needs a
+  mission-solution injection point for the terrain grid / candidate set (or a
+  constructed-grid falsifying case), which would change what
+  "the single place any number is computed" accepts. Deliberately not churned
+  this round.
+* **TODO C1's alternative branch** (docstring states the dedup and raises on a
+  repeated waypoint) was not taken; instead the map now carries one entry per
+  waypoint, which preserves the data.
+* The three remaining uncovered locations (`ballistics.py` 305, 384;
+  `terrain_ops.py` 253→268, 269) are unreachable defensive guards on a
+  4-connected grid and a strictly advancing integrator; a future hardening
+  could add a disconnected-grid injection to close the Dijkstra pair, but they
+  are disclosed in `docs/_generated/COUNTS.md` and are not bugs.
