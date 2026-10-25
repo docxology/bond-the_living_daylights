@@ -9,9 +9,10 @@ tags: [bond, mission, ballistics, defection-protocol, terrain-ops, deterministic
 
 # the-living-daylights
 
-Project-scoped skill for the in-repo PROJECT BOND film package at
-`projects/working/bond/the_living_daylights/`. Load this when working inside the
-project. **Mission codename: SNIPER'S NEST.**
+Project-scoped skill for the PROJECT BOND film package `the_living_daylights`
+(originally `projects/working/bond/the_living_daylights` in the suite working
+tree; canonical remote `github.com/docxology/bond-the_living_daylights`). Load
+this when working inside the project. **Mission codename: SNIPER'S NEST.**
 
 ## When to Use
 
@@ -24,7 +25,8 @@ project. **Mission codename: SNIPER'S NEST.**
 ## Quick Reference
 
 ```bash
-# From this package directory
+# From this package directory, inside the suite working tree
+# (a bare clone resolves bond-api only via the STANDALONE.md recipe)
 uv sync --extra dev
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
@@ -43,11 +45,12 @@ uv run python scripts/z_generate_manuscript_variables.py   # hydrate manuscript 
 - **No mocks.** All tests use real data and real computation, deterministically.
 - **Outputs are disposable.** Never hand-edit `output/` — regenerate from
   source and config (`z_generate_manuscript_variables.py`).
-- **No lineage.** The tree must stay free of `template_code_project` strings
+- **No lineage.** The tree must stay free of `template[_]code_project` strings
   (verify with `rg`).
 - **Deterministic.** Fixed seed (7), no wall-clock in persisted artifacts.
-- **Local-only.** No remote; commit inside this package's own git repo with
-  path-scoped commits.
+- **Commit scope.** `origin` is the private remote
+  `github.com/docxology/bond-the_living_daylights`; commit path-scoped inside
+  this package's own git repo, and never force-push or rewrite history.
 
 ## Cross-refs
 

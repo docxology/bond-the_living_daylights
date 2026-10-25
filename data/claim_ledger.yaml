@@ -1,6 +1,6 @@
 # Sourced numeric claims registered for evidence-registry validation.
 # Every claim is computed deterministically by the mission solution; none are
-# hand-authored in prose. Local-only tree.
+# hand-authored in prose. Standalone repository.
 
 claims:
   - key: zero_elevation_mrad

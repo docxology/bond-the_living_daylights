@@ -78,6 +78,9 @@ uv run python scripts/debrief.py                          # lessons learned
 uv run python scripts/z_generate_manuscript_variables.py  # manuscript + four figures
 ```
 
+The `uv sync`/`uv run` form resolves `bond-api` only inside the suite working
+tree; `STANDALONE.md` records the bare-clone recipe for the same gates.
+
 ## Verification
 
 ```bash
@@ -108,8 +111,9 @@ twice across a wall-clock second boundary and compares SHA-256 per file.
 Read [`docs/agent_instructions.md`](docs/agent_instructions.md),
 [`docs/architecture.md`](docs/architecture.md), and
 [`docs/testing_philosophy.md`](docs/testing_philosophy.md) before modifying
-anything. This is a local-only working tree: no remote, never push, commit
-path-scoped inside this package only.
+anything. This is a standalone checkout whose canonical remote is the private
+`github.com/docxology/bond-the_living_daylights`: commit path-scoped inside this
+package's own repository and never force-push or rewrite history.
 
 See also the in-repo skill:
 [`.agents/skills/the-living-daylights/SKILL.md`](.agents/skills/the-living-daylights/SKILL.md).

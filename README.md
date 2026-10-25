@@ -111,4 +111,11 @@ them, so none can go stale.
 * [`TODO.md`](TODO.md) — open work, accepted limitations, and the verification gate.
 * [`manuscript/`](manuscript/) — the paper, its config, and its bibliography.
 
-Local-only working tree: there is no remote, and nothing here is ever pushed.
+This tree is a standalone checkout of the PROJECT BOND film package
+`the_living_daylights` (originally `projects/working/bond/the_living_daylights`
+in the suite working tree). Its canonical remote is
+`github.com/docxology/bond-the_living_daylights` (private); no DOI has been
+minted. `uv sync` resolves `bond-api` — the frozen protocol dependency — from
+the suite working tree through `[tool.uv.sources]`, because it is not on PyPI,
+so outside that tree see [`STANDALONE.md`](STANDALONE.md) for the bare-clone
+install and verification recipe.

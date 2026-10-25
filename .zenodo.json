@@ -1,6 +1,6 @@
 {
   "title": "The Living Daylights: SNIPER'S NEST — Special-Agent Mission Software",
-  "description": "Deterministic PROJECT BOND mission software for The Living Daylights (1987): sniper ballistics, staged risk-scored defection handling, and mountain/desert terrain operations. Implements the frozen BOND-API MissionProvider protocol. Local-only working tree.",
+  "description": "Deterministic PROJECT BOND mission software for The Living Daylights (1987): sniper ballistics, staged risk-scored defection handling, and mountain/desert terrain operations. Implements the frozen BOND-API MissionProvider protocol.",
   "creators": [
     {
       "name": "Daniel Ari Friedman",

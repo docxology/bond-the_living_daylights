@@ -210,8 +210,10 @@ diff -r "$R1" "$R2" && echo "byte-identical"
 ```
 
 Live measured totals live in [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md).
-This is a local-only working tree: no remote, never push, commit path-scoped
-inside this package only.
+By "checked in" this file means the working tree of this standalone checkout,
+whose canonical remote is the private
+`github.com/docxology/bond-the_living_daylights`: commit path-scoped inside this
+package only, and never force-push or rewrite history.
 
 
 ## Round-2 (2026-08-06)

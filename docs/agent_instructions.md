@@ -6,11 +6,13 @@ touching anything.
 
 ## Hard rules
 
-1. **Scope is this package only.** Work inside
-   `projects/working/bond/the_living_daylights/` exclusively. Never touch a
-   sibling BOND package, the bond suite root files, or the template repository.
-2. **Local-only.** There is no git remote and never will be. Never push. Commit
-   inside this package's own repository, path-scoped.
+1. **Scope is this repository only.** This is the standalone checkout of
+   `the_living_daylights` (originally `projects/working/bond/the_living_daylights`
+   in the suite working tree), published at the private
+   `github.com/docxology/bond-the_living_daylights`. Never touch a sibling BOND
+   package, the bond suite root files, or the template repository.
+2. **Commit scope.** `origin` is that GitHub remote. Commit path-scoped inside
+   this repository, push only `main`, and never force-push or rewrite history.
 3. **Keep the core pure.** `ballistics.py`, `optics.py`, `countersniper.py`,
    `visibility.py`, `defection_protocol.py`, `terrain_ops.py`, `settings.py`,
    and `compute_mission.py` import stdlib and numpy only. They must remain
@@ -87,6 +89,10 @@ Run the coverage gate, read the real numbers off the run, and write them into
 other prose.
 
 ## Verification checklist (run all of it before claiming done)
+
+`uv sync` / `uv run` resolve only inside the suite working tree, where
+`[tool.uv.sources]` locates `bond-api`; `STANDALONE.md` records the equivalent
+bare-clone commands.
 
 ```bash
 uv sync --extra dev

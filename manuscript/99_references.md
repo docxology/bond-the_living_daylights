@@ -54,7 +54,8 @@ what it backs in the code:
 
 11. Friedman, D. A. (2026). *The Living Daylights: SNIPER'S NEST —
     Special-Agent Mission Software* (v{{VERSION}}). PROJECT BOND suite, Active
-    Inference Institute. Local-only working tree. `[@friedman2026sniper]`
+    Inference Institute. Standalone repository in the PROJECT BOND suite.
+    `[@friedman2026sniper]`
 12. PROJECT BOND (2026). *bond-api — the frozen mission protocol contract*
     (Phase 1 reference). PROJECT BOND suite, Active Inference Institute.
     `[@bondapi2026]`

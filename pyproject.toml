@@ -1,5 +1,6 @@
 # PROJECT BOND — the_living_daylights (The Living Daylights, 1987) · SNIPER'S NEST
-# Local-only working tree. The mission protocol (bond_api) is a FROZEN dependency.
+# Standalone checkout (private remote: github.com/docxology/bond-the_living_daylights).
+# The mission protocol (bond_api) is a FROZEN dependency.
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -23,6 +24,8 @@ dependencies = [
 
 [tool.uv.sources]
 # FROZEN protocol dependency — films code against bond_api, never invent types.
+# The path is suite provenance: it resolves only inside the suite working tree
+# (bond-api is not on PyPI). STANDALONE.md records the bare-clone recipe.
 bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
 
 [project.optional-dependencies]
@@ -89,4 +92,5 @@ ignore = [
 where = ["src"]
 
 [tool.uv]
-# Local-only tree; inherits workspace settings from root pyproject.toml
+# Standalone checkout; when nested in the suite the root pyproject.toml carries
+# the workspace settings this tree inherits.

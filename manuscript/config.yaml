@@ -1,7 +1,7 @@
 # PROJECT BOND — the_living_daylights (The Living Daylights, 1987) · SNIPER'S NEST
 # Manuscript identity and parameters. Loaded by
 # src/the_living_daylights/manuscript_variables.py::generate_variables() and by
-# the rendering pipeline. Local-only: no remote, no DOI records.
+# the rendering pipeline. Standalone repository: no DOI records.
 
 paper:
   # RASP Standard: Title must be descriptive and objective
@@ -21,7 +21,7 @@ publication:
   journal: "BOND Mission Software Series"
   series: "SNIPER'S NEST"
   year: "2026"
-  note: "Local-only working tree — published as part of the shared BOND suite; no standalone DOI."
+  note: "Published as part of the shared BOND suite; no standalone DOI."
 
 keywords:
   - "sniper ballistics"

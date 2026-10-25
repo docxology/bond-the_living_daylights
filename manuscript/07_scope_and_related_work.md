@@ -76,5 +76,5 @@ byte-identical reruns rather than statistical agreement.
 The package is one film in the PROJECT BOND suite. Its role is to implement the
 frozen BOND-API `MissionProvider` contract with a real, deterministic,
 well-tested domain core, and to serve as a canonical example of converting a
-template scaffold into a standalone mission package. It is local-only and is
-discovered by the suite orchestrator via `bond_api`.
+template scaffold into a standalone mission package. It is a standalone
+repository and is discovered by the suite orchestrator via `bond_api`.
