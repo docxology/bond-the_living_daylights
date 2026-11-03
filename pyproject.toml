@@ -26,7 +26,7 @@ dependencies = [
 # FROZEN protocol dependency — films code against bond_api, never invent types.
 # The path is suite provenance: it resolves only inside the suite working tree
 # (bond-api is not on PyPI). STANDALONE.md records the bare-clone recipe.
-bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
+bond-api = { path = "../bond-api" }
 
 [project.optional-dependencies]
 dev = [
