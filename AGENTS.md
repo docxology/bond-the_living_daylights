@@ -113,7 +113,7 @@ twice across a wall-clock second boundary and compares SHA-256 per file.
 Read [`docs/agent_instructions.md`](docs/agent_instructions.md),
 [`docs/architecture.md`](docs/architecture.md), and
 [`docs/testing_philosophy.md`](docs/testing_philosophy.md) before modifying
-anything. This is a standalone checkout whose canonical remote is the private
+anything. This is a standalone checkout whose canonical remote is the public
 `github.com/docxology/bond-the_living_daylights`: commit path-scoped inside this
 package's own repository and never force-push or rewrite history.
 

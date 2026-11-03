@@ -8,7 +8,7 @@ touching anything.
 
 1. **Scope is this repository only.** This is the standalone checkout of
    `the_living_daylights` (originally `projects/working/bond/the_living_daylights`
-   in the suite working tree), published at the private
+   in the suite working tree), published at the public
    `github.com/docxology/bond-the_living_daylights`. Never touch a sibling BOND
    package, the bond suite root files, or the template repository.
 2. **Commit scope.** `origin` is that GitHub remote. Commit path-scoped inside

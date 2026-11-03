@@ -10,7 +10,7 @@ mountain/desert terrain operations. It implements the frozen BOND-API
 `MissionProvider` protocol.
 
 - **Standalone checkout** — canonical remote
-  `github.com/docxology/bond-the_living_daylights` (private). No DOI has been
+  `github.com/docxology/bond-the_living_daylights` (public). No DOI has been
   minted, so the publication sidecars (`CITATION.cff`, `.zenodo.json`,
   `codemeta.json`) carry no DOI or repository URL.
 - **Pure domain core** — `src/the_living_daylights/` (stdlib + numpy only) is

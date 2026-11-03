@@ -1,5 +1,5 @@
 # PROJECT BOND — the_living_daylights (The Living Daylights, 1987) · SNIPER'S NEST
-# Standalone checkout (private remote: github.com/docxology/bond-the_living_daylights).
+# Standalone checkout (public remote: github.com/docxology/bond-the_living_daylights).
 # The mission protocol (bond_api) is a FROZEN dependency, vendored under vendor/bond-api/.
 
 [build-system]

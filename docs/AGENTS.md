@@ -42,7 +42,7 @@ item below is a hard constraint, not a suggestion.
   test compares them key for key in both directions.
 - **No exemplar lineage.** The tree carries zero `template[_]code_project`
   strings; the fork contract lives in `STANDALONE.md`.
-- **Standalone remote.** The canonical remote is the private
+- **Standalone remote.** The canonical remote is the public
   `github.com/docxology/bond-the_living_daylights`. Commit path-scoped inside
   this package's own git repo; never force-push or rewrite history.
 

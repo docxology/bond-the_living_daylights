@@ -47,7 +47,7 @@ uv run python scripts/z_generate_manuscript_variables.py   # hydrate manuscript 
 - **No lineage.** The tree must stay free of `template[_]code_project` strings
   (verify with `rg`).
 - **Deterministic.** Fixed seed (7), no wall-clock in persisted artifacts.
-- **Commit scope.** `origin` is the private remote
+- **Commit scope.** `origin` is the public remote
   `github.com/docxology/bond-the_living_daylights`; commit path-scoped inside
   this package's own git repo, and never force-push or rewrite history.
 
