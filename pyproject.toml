@@ -1,6 +1,6 @@
 # PROJECT BOND — the_living_daylights (The Living Daylights, 1987) · SNIPER'S NEST
-# Standalone checkout (private remote: github.com/docxology/bond-the_living_daylights).
-# The mission protocol (bond_api) is a FROZEN dependency.
+# Standalone checkout (public remote: github.com/docxology/bond-the_living_daylights).
+# The mission protocol (bond_api) is a FROZEN dependency, vendored under vendor/bond-api/.
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -24,9 +24,10 @@ dependencies = [
 
 [tool.uv.sources]
 # FROZEN protocol dependency — films code against bond_api, never invent types.
-# The path is suite provenance: it resolves only inside the suite working tree
-# (bond-api is not on PyPI). STANDALONE.md records the bare-clone recipe.
-bond-api = { path = "../bond-api" }
+# Vendored at vendor/bond-api/ (provenance: vendor/bond-api/VENDOR.md): a single-repository clone
+# — Dependabot's update jobs, or anyone's — resolves it in-tree, with no sibling checkout.
+# scripts/vendor.py --check keeps the copy byte-identical to upstream docxology/bond-api.
+bond-api = { path = "vendor/bond-api" }
 
 [project.optional-dependencies]
 dev = [
@@ -76,11 +77,16 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 ignore_missing_imports = true
 files = ["src", "scripts"]
+# The vendored copy is a dependency; its own upstream gate covers it, and vendor.py --check binds
+# its bytes. Type errors inside it are upstream's to fix, not this tree's to patch.
+exclude = ["(^|/)vendor/"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 src = ["src", "scripts", "tests"]
+# The vendored copy is byte-identical to upstream and must stay that way; its own gate covers it.
+extend-exclude = ["vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B"]

@@ -25,8 +25,7 @@ this when working inside the project. **Mission codename: SNIPER'S NEST.**
 ## Quick Reference
 
 ```bash
-# From this package directory, inside the suite working tree
-# (a bare clone resolves bond-api only via the STANDALONE.md recipe)
+# From this package directory; bond-api is vendored at vendor/bond-api/
 uv sync --extra dev
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
@@ -48,7 +47,7 @@ uv run python scripts/z_generate_manuscript_variables.py   # hydrate manuscript 
 - **No lineage.** The tree must stay free of `template[_]code_project` strings
   (verify with `rg`).
 - **Deterministic.** Fixed seed (7), no wall-clock in persisted artifacts.
-- **Commit scope.** `origin` is the private remote
+- **Commit scope.** `origin` is the public remote
   `github.com/docxology/bond-the_living_daylights`; commit path-scoped inside
   this package's own git repo, and never force-push or rewrite history.
 

@@ -114,8 +114,8 @@ them, so none can go stale.
 This tree is a standalone checkout of the PROJECT BOND film package
 `the_living_daylights` (originally `projects/working/bond/the_living_daylights`
 in the suite working tree). Its canonical remote is
-`github.com/docxology/bond-the_living_daylights` (private); no DOI has been
+`github.com/docxology/bond-the_living_daylights` (public); no DOI has been
 minted. `uv sync` resolves `bond-api` — the frozen protocol dependency — from
-the suite working tree through `[tool.uv.sources]`, because it is not on PyPI,
-so outside that tree see [`STANDALONE.md`](STANDALONE.md) for the bare-clone
-install and verification recipe.
+the vendored copy at `vendor/bond-api/`, because it is not installable from an
+index; [`STANDALONE.md`](STANDALONE.md) records the provenance, the refresh
+command, and the check that runs in this tree's own gate.
