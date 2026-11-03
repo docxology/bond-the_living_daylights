@@ -90,9 +90,9 @@ other prose.
 
 ## Verification checklist (run all of it before claiming done)
 
-`uv sync` / `uv run` resolve only inside the suite working tree, where
-`[tool.uv.sources]` locates `bond-api`; `STANDALONE.md` records the equivalent
-bare-clone commands.
+`uv sync` / `uv run` resolve `bond-api` from the vendored copy at
+`vendor/bond-api/`; `STANDALONE.md` records its provenance and the check that
+keeps it byte-identical to upstream.
 
 ```bash
 uv sync --extra dev

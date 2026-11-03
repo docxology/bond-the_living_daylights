@@ -78,8 +78,10 @@ uv run python scripts/debrief.py                          # lessons learned
 uv run python scripts/z_generate_manuscript_variables.py  # manuscript + four figures
 ```
 
-The `uv sync`/`uv run` form resolves `bond-api` only inside the suite working
-tree; `STANDALONE.md` records the bare-clone recipe for the same gates.
+The `uv sync`/`uv run` form resolves `bond-api` from the vendored copy at
+`vendor/bond-api/`, so this checkout installs and gates in any clone; its
+provenance and the check that binds it are recorded in
+[`STANDALONE.md`](STANDALONE.md).
 
 ## Verification
 

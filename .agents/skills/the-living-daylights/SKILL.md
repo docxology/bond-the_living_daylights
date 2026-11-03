@@ -25,8 +25,7 @@ this when working inside the project. **Mission codename: SNIPER'S NEST.**
 ## Quick Reference
 
 ```bash
-# From this package directory, inside the suite working tree
-# (a bare clone resolves bond-api only via the STANDALONE.md recipe)
+# From this package directory; bond-api is vendored at vendor/bond-api/
 uv sync --extra dev
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/

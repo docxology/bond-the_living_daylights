@@ -21,7 +21,7 @@ mountain/desert terrain operations. It implements the frozen BOND-API
 
 ## Run it
 
-Inside the suite working tree, where `[tool.uv.sources]` resolves `bond-api`:
+The checkout is self-contained — `bond-api` is vendored at `vendor/bond-api/`:
 
 ```bash
 uv sync --extra dev
@@ -30,21 +30,24 @@ uv run python scripts/execute.py                          # run the mission
 uv run python scripts/z_generate_manuscript_variables.py   # manuscript + figures
 ```
 
-## Bare clone
+## Any clone
 
-`bond-api` is a suite-local package: it is not on PyPI, and `[tool.uv.sources]`
-pins the monorepo working-tree path, so `uv sync` cannot resolve it here. Every
-gate still runs once `bond_api` is on the interpreter path:
+`bond-api` is vendored at `vendor/bond-api/` — a byte-for-byte copy of
+`docxology/bond-api` at the commit recorded in `vendor/bond-api/PROVENANCE.json`
+— and `[tool.uv.sources]` points at it, so `uv sync` resolves in any clone, with
+no sibling or suite directory present. That is what Dependabot's update jobs
+need: they check out this repository alone.
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install numpy matplotlib pyyaml pytest pytest-cov ruff mypy types-PyYAML
-PYTHONPATH=src:<dir holding bond_api/> \
-  .venv/bin/python -m pytest tests/ --cov=src --cov-fail-under=90
+uv sync --extra dev
+uv run pytest tests/ --cov=src --cov-fail-under=90
 ```
 
-`src` belongs on `PYTHONPATH`, not just in pytest's `pythonpath` ini, because
-several tests exercise the core in a spawned interpreter.
+`scripts/vendor.py --check` — also run by `tests/test_vendor_provenance.py`
+inside the gate above — fails if any vendored file drifts from its record: the
+copy is a dependency, not a fork, so an edit belongs upstream and comes back
+through `scripts/vendor.py --refresh --from <bond-api checkout>`.
+`vendor/bond-api/VENDOR.md` carries the provenance table for a reader.
 
 `pyproject.toml` carries the `pytest`, `coverage`, `mypy` **and** `ruff`
 settings, so every gate behaves identically here and in the suite.
