@@ -274,3 +274,19 @@ failures / 0 errors / 0 skips, 99.52% line+branch coverage on `src/`**
   4-connected grid and a strictly advancing integrator; a future hardening
   could add a disconnected-grid injection to close the Dijkstra pair, but they
   are disclosed in `docs/_generated/COUNTS.md` and are not bugs.
+
+## Workflowz review — 2026-11-10
+
+### Correctness
+
+**W1 — P2 — Validate `MissionProvider.execute` against the supplied plan instead of reporting success for any step sequence.**
+`src/the_living_daylights/mission.py:196-200` computes the full mission solution for every input, unconditionally adds `steps_completed` and `step_names`, and `mission.py:201-203` returns `success=True`; the parameter is used only to echo metadata. Thus an empty or reordered plan still produces a successful outcome even though `plan()` defines the eight-step flow at `mission.py:157-193`. Preserve the frozen lifecycle signatures documented at `AGENTS.md:62-65`; do not require a new dependency or alter the valid-plan result.
+*Done when:* `execute()` rejects a plan with no steps or an unexpected step sequence with a documented exception, while `execute(MissionProvider().plan(MissionProvider().brief()))` retains its successful outcome and provenance behavior.
+*Probe:* from the repository root run `uv run python -c 'from bond_api.protocol import MissionPlan; from the_living_daylights.mission import MissionProvider; p=MissionProvider(); assert p.execute(p.plan(p.brief())).success; exec("try:\n p.execute(MissionPlan(steps=()))\nexcept ValueError:\n pass\nelse:\n raise AssertionError(\"empty plan reported success\")")'` — it exits 0 only when a valid plan succeeds and an empty plan raises `ValueError`. Add a focused test under `tests/test_mission.py` and run `uv run pytest tests/test_mission.py -v`.
+
+### Verification
+
+**W2 — P2 — Close the stale V4 coverage item with an observable no-visible-nest rendering test.**
+The injection requested by existing TODO V4 is already implemented: `src/the_living_daylights/figures/plots.py:164-176` accepts `solution=` and selects it instead of calling `mission_solution()`, and `plots.py:181-195` handles a missing `best_cell` and conditionally draws the best-nest marker and sight line. What remains unverified by the packet is a test that exercises this path; `TODO.md:90-99` still describes the old no-injection implementation. Add the behavioral regression test rather than another injection point or a source-text assertion, and remove/update V4 when its coverage expectation is observed.
+*Done when:* a test supplies an otherwise valid solution whose `overwatch.best_cell` is `None`, renders to a temporary directory, and verifies that `overwatch_nests.png` is created and non-empty; running the figure coverage command no longer identifies the `best is not None` false arm as uncovered, or V4 records the remaining measured branch precisely.
+*Probe:* `uv run pytest tests/test_figures.py --cov=src/the_living_daylights/figures --cov-report=term-missing` — passes with the new no-visible-nest case and reports the previously identified `plots.py:183->186` branch covered. Dependency: the existing matplotlib/Agg rendering setup at `plots.py:22-28`; use the test suite's temporary-output convention rather than writing the repository's ignored `output/` tree.
