@@ -7,6 +7,30 @@ A deterministic PROJECT BOND film package modeling the operational concepts of
 `MissionProvider` protocol and is discovered by the suite orchestrator under the
 slug `the_living_daylights`.
 
+## Mission model
+
+```mermaid
+flowchart TD
+    accTitle: SNIPER'S NEST implemented mission analyses
+    accDescr: Rifle and optic settings, terrain and defection scenario feed Ballistic trajectory and scope ranging; Countersniper localization and terrain visibility; Terrain routes and staged defection risk. The mission adapter returns firing, overwatch, route and defection assessments with provenance, then a debrief.
+    I["Rifle and optic settings, terrain and defection scenario"]
+    G0["Ballistic trajectory and scope ranging"]
+    I --> G0
+    G1["Countersniper localization and terrain visibility"]
+    I --> G1
+    G2["Terrain routes and staged defection risk"]
+    I --> G2
+    O["mission.py: execute returns MissionOutcome<br/>Firing, overwatch, route and defection assessments and provenance"]
+    G0 --> O
+    G1 --> O
+    G2 --> O
+    O --> F["debrief: mission summary"]
+```
+
+The branches group implemented capabilities; they do not imply a runtime order.
+
+**Source map:** [`ballistics.py`](src/the_living_daylights/ballistics.py), [`optics.py`](src/the_living_daylights/optics.py); [`countersniper.py`](src/the_living_daylights/countersniper.py), [`visibility.py`](src/the_living_daylights/visibility.py); [`terrain_ops.py`](src/the_living_daylights/terrain_ops.py), [`defection_protocol.py`](src/the_living_daylights/defection_protocol.py); [`mission.py`](src/the_living_daylights/mission.py).
+
 ## The film is the spec
 
 Every module below implements something the film actually turns on:
