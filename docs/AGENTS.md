@@ -1,5 +1,7 @@
 # docs/ — SNIPER'S NEST agent documentation
 
+[Package maintenance](package-maintenance.md) identifies the dependency and citation records.
+
 Rulebook for agents and developers working inside `the_living_daylights`. Every
 item below is a hard constraint, not a suggestion.
 
