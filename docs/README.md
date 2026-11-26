@@ -1,5 +1,7 @@
 # docs/ — SNIPER'S NEST documentation hub
 
+[Package maintenance](package-maintenance.md) covers dependency and release records.
+
 Documentation for `the_living_daylights`, the PROJECT BOND film package for
 *The Living Daylights* (1987), mission codename **SNIPER'S NEST**. This
 directory holds the operating rules and the design record; the code's own

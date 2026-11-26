@@ -1,5 +1,7 @@
 # SNIPER'S NEST
 
+See [package maintenance](docs/package-maintenance.md) for dependency and citation records.
+
 **The Living Daylights: SNIPER'S NEST — Special-Agent Mission Software**
 
 A deterministic PROJECT BOND film package modeling the operational concepts of
