@@ -1,6 +1,7 @@
 # SNIPER'S NEST
 
-See [package maintenance](docs/package-maintenance.md) for dependency and citation records.
+For the distribution version, checkout Python selection, dependency sources,
+and citation records, see [package maintenance](docs/package-maintenance.md).
 
 **The Living Daylights: SNIPER'S NEST — Special-Agent Mission Software**
 

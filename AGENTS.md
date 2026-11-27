@@ -1,5 +1,8 @@
 # PROJECT BOND — the_living_daylights · SNIPER'S NEST
 
+The [package maintenance guide](docs/package-maintenance.md) records the
+distribution identity, Python selection, dependency provenance, and citation metadata.
+
 **Film:** The Living Daylights (1987) · **Mission codename:** SNIPER'S NEST
 
 SNIPER'S NEST is a PROJECT BOND film package: deterministic, special-agent
